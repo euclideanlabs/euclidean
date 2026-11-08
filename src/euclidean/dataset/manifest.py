@@ -33,6 +33,18 @@ class LabelSource(str, Enum):
     AUTHOR_REVIEW = "author_review"  # labeled by hand before seeing results
 
 
+class QuerySource(str, Enum):
+    """Where the query text came from. Independent of where the labels came from.
+
+    Report scores per query source: if pr_text cases score much higher, the
+    difference is leakage, not retrieval quality.
+    """
+    ISSUE_CLOSES = "issue_closes"      # issue the fix PR says it closes
+    ISSUE_MENTIONS = "issue_mentions"  # issue the fix PR only mentions; check it by hand
+    PR_TEXT = "pr_text"                # PR text; often names the fixed code (leakage)
+    AUTHOR_REWRITE = "author_rewrite"  # symptom-only text written by a person
+
+
 class ReviewStatus(str, Enum):
     CANDIDATE = "candidate"  # mined automatically, not checked by a person
     REVIEWED = "reviewed"    # a person checked query and labels
@@ -78,6 +90,7 @@ class DatasetSpec(_Strict):
 class BenchmarkCase(_Strict):
     id: str
     query: str = Field(min_length=10)
+    query_source: QuerySource
     relevant_files: list[str] = Field(min_length=1)
     relevant_symbols: list[str] = Field(default_factory=list)
     label_source: LabelSource
@@ -108,6 +121,9 @@ class BenchmarkCase(_Strict):
                 raise ValueError(f"symbol {sym!r} must look like 'path::Qualified.name'")
             if symbol_file(sym) not in files:
                 raise ValueError(f"symbol {sym!r} is in a file that is not in relevant_files")
+        if self.status == ReviewStatus.REVIEWED and self.query_source == QuerySource.PR_TEXT:
+            raise ValueError("a reviewed case cannot use a pr_text query (it leaks the fix); "
+                             "rewrite it (author_rewrite) or reject the case")
         return self
 
 

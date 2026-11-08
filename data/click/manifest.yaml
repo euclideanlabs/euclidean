@@ -11,44 +11,48 @@ cases:
   query: "Fix short help abbreviation\n\nJust a small bug I encountered in my CLIs, where as `vs.` or\
     \ `e.g.` was prematurely ending the shorten version of a help message produced by `_make_default_short_help`.\r\
     \n\r\nAlso use the opportunity to simplify the calculations and depends on Python's `textwrap.shorten`."
+  query_source: pr_text
   relevant_files:
   - src/click/utils.py
   relevant_symbols:
   - src/click/utils.py::_make_default_short_help
   label_source: fix_commit
   source_ref: https://github.com/pallets/click/pull/3865
-  status: candidate
+  status: rejected
   split: dev
   notes: 'fix commit f67c2bb6c2f055c1c7a57cd46c3697fc26a7742e: Fix short help abbreviation. LEAKAGE RISK:
-    query from PR text, not an issue'
+    query from PR text, not an issue | REVIEW 2026-11-08: query is PR text (names the fix); rewrite later
+    or leave rejected'
 - id: click-fc518e4
-  query: "Fix race condition on `KeyboardInterrupt` in `Command.main()`\n\nThis PR address https://github.com/pallets/click/issues/3802\
-    \ by unifying the policy that was already implemented elsewhere in the code.\r\n\r\nThis applies the\
-    \ policy the pager has had since #351, where a late interrupt must not replace the intended outcome:\r\
-    \nhttps://github.com/pallets/click/blob/8b19813f2bfca99f1018a587a8cf54fc959f2e5d/src/click/_termui_impl.py#L618-L632\r\
-    \n\r\nSo now in `main()`, every handler takes the same two steps:\r\n- propagate when standalone mode\
-    \ is off, or\r\n- collect the message and the exit code.\r\n\r\nA final step then prints the message\
-    \ and exits, so a late interrupt can only lose the message, not the code.\r\n\r\nThis save one nesting\
-    \ level in the `try...except` cascade of `main()`.\r\n\r\nThis is in accordance with older policy\
-    \ choices from:\r\n- #2380: where we decided that the first interrupt still reaches non-standalone\
-    \ callers as `Abort`, and keeps the interrupt as its `__cause__`\r\n- #2584: where we decided not\
-    \ to change the `Aborted!` message\r\n\r\nWith these changes, we do not crash anymore, and a late\
-    \ interrupt after a successful run now exits 0, instead of printing a traceback.\r\n\r\nThis PR also\
-    \ adds stress tests that introduce random delays in the execution so we can catch regression at different\
-    \ points in time with real SIGINTs.\r\n\r\nOff course we can discuss the policy we rely on and I'm\
-    \ ready to change the code accordingly."
+  query: "`KeyboardInterrupt` during `click.prompt()` can race\n\n## Bug\n\nWhen a user uses Ctrl-C during\
+    \ `click.prompt()`, this may cause an unhandled exception. Seen during CI on an Ubuntu 22.04 arm github\
+    \ runner. The same test on Ubuntu 22.04 x64, macOS arm, Windows x64/arm succeeded. This is likely\
+    \ to be a race that doesn't pop up every time\n\n```\n    | --- tty: Ctrl+C aborts at a prompt ---\n\
+    \    | spawn /home/runner/work/ethstaker-deposit-cli/ethstaker-deposit-cli/ethstaker_deposit-cli-c082a10-linux-arm64/deposit\
+    \ --language english --ignore_connectivity generate-mnemonic\n    | Please choose the language of\
+    \ the mnemonic word list [1. 简体中文, 2. 繁體中文, 3. čeština, 4. English, 5. Français, 6. Italiano, 7. 日本語,\
+    \ 8. 한국어, 9. Português, 10. Español]:  [english]: ^CTraceback (most recent call last):\n    |   File\
+    \ \"click/core.py\", line 1490, in main\n    |   File \"click/core.py\", line 1968, in invoke\n  \
+    \  |   File \"click/core.py\", line 1300, in make_context\n    |   File \"click/core.py\", line 1311,\
+    \ in parse_args\n    |   File \"click/core.py\", line 2686, in handle_parse_result\n    |   File \"\
+    click/core.py\", line 3508, in consume_value\n    |   File \"ethstaker_deposit/utils/click.py\", line\
+    \ 62, in prompt_for_value\n    |   File \"click/core.py\", line 3372, in prompt_for_value\n    | \
+    \  File \"click/termui.py\", line 218, in prompt\n    |   File \"click/termui.py\", line 201, in prompt_func\n\
+    \    | click.exceptions.Abort\n    | \n    | During handling of the above exception, another exception\
+    \ occurred:\n    | \n    | Traceb"
+  query_source: issue_mentions
   relevant_files:
   - src/click/core.py
   relevant_symbols:
   - src/click/core.py::_echo_aborted
-  - src/click/core.py::<module>
   - src/click/core.py::Command.main
   label_source: fix_commit
-  source_ref: https://github.com/pallets/click/pull/3818
-  status: candidate
+  source_ref: https://github.com/pallets/click/issues/3802
+  status: reviewed
   split: dev
   notes: 'fix commit fc518e41218b447e875fe27244ae692c269bcb77: Fix race condition on `KeyboardInterrupt`
-    arriving in `Command.main()`. LEAKAGE RISK: query from PR text, not an issue'
+    arriving in `Command.main()`. query from issue (mentions); fix PR https://github.com/pallets/click/pull/3818
+    | REVIEW 2026-11-08: PR says it addresses #3802; symptom in prompt(), fix in Command.main'
 - id: click-f58ca3e
   query: 'Fix `copy`, `deepcopy` and `pickle` of `Sentinel` members
 
@@ -56,6 +60,7 @@ cases:
     Just a small issue I encountered on Python 3.10, where `Enum` has no `__deepcopy__`. Now that every
     parameter have a sentinel, `copy.deepcopy()` of any `Option`, `Argument` or `Command` fails on Python
     3.10. And `pickle` fails on every Python version. This PR fix this issue.'
+  query_source: pr_text
   relevant_files:
   - src/click/_utils.py
   relevant_symbols:
@@ -63,13 +68,13 @@ cases:
   - src/click/_utils.py::Sentinel
   - src/click/_utils.py::Sentinel.__deepcopy__
   - src/click/_utils.py::Sentinel.__reduce_ex__
-  - src/click/_utils.py::<module>
   label_source: fix_commit
   source_ref: https://github.com/pallets/click/pull/3805
-  status: candidate
+  status: rejected
   split: dev
   notes: 'fix commit f58ca3e81424a35626c8a475eb59ab95589008ce: Fix `copy`, `deepcopy` and `pickle` of
-    `Sentinel` members. LEAKAGE RISK: query from PR text, not an issue'
+    `Sentinel` members. LEAKAGE RISK: query from PR text, not an issue | REVIEW 2026-11-08: query is PR
+    text (names the fix); rewrite later or leave rejected'
 - id: click-a6256bf
   query: "Forward all user's parameters set in `PAGER` and improve flag detection\n\nAnother PR following\
     \ up on pager refactors that:\r\n- Forwards all user's parameters set in `PAGER`\r\n- Improve detection\
@@ -77,20 +82,21 @@ cases:
     \ if not currently exercised, this make the method future-proof)\r\n\r\nBut more importantly: adds\
     \ dozen of testing with weird edge-cases around pager's internal methods.\r\n\r\nFollows up on:\r\n\
     - https://github.com/pallets/click/pull/3767\r\n- https://github.com/pallets/click/pull/3776"
+  query_source: pr_text
   relevant_files:
   - src/click/_termui_impl.py
   relevant_symbols:
   - src/click/_termui_impl.py::_pager_contextmanager
   - src/click/_termui_impl.py::_less_uses_raw_mode
-  - src/click/_termui_impl.py::<module>
   - src/click/_termui_impl.py::_pipepager
   - src/click/_termui_impl.py::_tempfilepager
   label_source: fix_commit
   source_ref: https://github.com/pallets/click/pull/3777
-  status: candidate
+  status: rejected
   split: dev
   notes: 'fix commit a6256bfb5971d5e58585fe7b6c656134e1ade5a4: Forwards all user''s parameters set in
-    `PAGER`. LEAKAGE RISK: query from PR text, not an issue'
+    `PAGER`. LEAKAGE RISK: query from PR text, not an issue | REVIEW 2026-11-08: query is PR text (names
+    the fix); rewrite later or leave rejected'
 - id: click-3495fba
   query: "help not resolving automatically\n\nFrom the docs: \r\n\r\nThe help parameter is implemented\
     \ in Click in a very special manner. Unlike regular parameters it’s automatically added by Click for\
@@ -108,23 +114,26 @@ cases:
     \ is not a valid boolean.\r\n\r\n# > python -m help --help\r\n# Usage: help.py [OPTIONS] HELP\r\n\
     # Try 'help.py --help' for help.\r\n\r\n# Error: Missing argument 'HELP'.\r\n\r\n# This does not work\r\
     \n@click.command()\r\n@click.option('--h"
+  query_source: issue_closes
   relevant_files:
   - src/click/core.py
   relevant_symbols:
-  - src/click/core.py::<module>
+  - src/click/core.py::_HELP_OPTION_STORAGE_NAME
   - src/click/core.py::Command.get_params
   - src/click/core.py::Command.get_help_option
   label_source: fix_commit
   source_ref: https://github.com/pallets/click/issues/2819
-  status: candidate
+  status: reviewed
   split: dev
   notes: 'fix commit 3495fba163dd61dea837cd557095df6c21515ac8: Warn when an argument name collide with
-    other parameters. query from issue; fix PR https://github.com/pallets/click/pull/3678'
+    other parameters. query from issue (closes); fix PR https://github.com/pallets/click/pull/3678 | REVIEW
+    2026-11-08: issue closed by fix PR; fix adds a collision warning (accepted as the fix)'
 - id: click-07c909f
   query: 'Validate `style()` color arguments
 
 
     Also fix an explicit black color argument (`0`) being ignored.'
+  query_source: pr_text
   relevant_files:
   - src/click/termui.py
   relevant_symbols:
@@ -132,90 +141,71 @@ cases:
   - src/click/termui.py::style
   label_source: fix_commit
   source_ref: https://github.com/pallets/click/pull/3677
-  status: candidate
+  status: rejected
   split: dev
   notes: 'fix commit 07c909f23f0f83b5ca137c167b9a134d66201f67: Validate style() color arguments, fix explicit
-    black color argument. LEAKAGE RISK: query from PR text, not an issue'
+    black color argument. LEAKAGE RISK: query from PR text, not an issue | REVIEW 2026-11-08: query is
+    PR text (names the fix); rewrite later or leave rejected'
 - id: click-bec5928
-  query: "Fix `package_name` resolution when module differs from distribution name\n\nThere is an issue\
-    \ we glossed over when closing #2331: I analyzed the bug report as requiring a new slot/field to be\
-    \ added to the `@version_option` decorator. I promptly close the issue as we decided in https://github.com/pallets/click/discussions/3527\
-    \ to freeze `@version_option`.\r\n\r\nBut looking closely #2331 did not asked for a new `module_name`\
-    \ field. That was my suggestion on how to address the user request.\r\n\r\nSo reframing it, #2331\
-    \ is a report that `@version_option` is producing a `RuntimeError` for users in some legitimate situations.\
-    \ This breaks the out-of-the-box experience of `@version_option`.\r\n\r\nIn fact, the limitation has\
-    \ been pointed out by @davidism a couple of years ago at https://github.com/pallets/click/issues/1884#issuecomment-843693678:\r\
-    \n> If someone figures out a way to get the distribution version from the entry point name with `importlib.metadata`,\
-    \ I'd welcome a PR to improve our detection, but from my experiments with it I was not able to find\
-    \ how to do it. For now, I'll update the changelog.\r\n\r\nSo this is a PR to implement that fix.\r\
-    \n\r\nAddresses:\r\n- #1884\r\n- #2331\r\n- #3125"
+  query: "`version_option` module name and package name are not equivalent\n\nEnvironment:\r\n\r\n- Python\
+    \ version: 3.8\r\n- Click version: 8.1\r\n\r\nThe click.version_option uses the module name to get\
+    \ the package version :\r\nhttps://github.com/pallets/click/blob/08f71b08e2b7ee9b1ea27daf6d3040999fc68551/src/click/decorators.py#L410-L417\r\
+    \n\r\nBut module name and package name are not always equivalent. This could be crash when the module\
+    \ name not the same as the package name, eg. https://github.com/open-mmlab/mim/pull/152"
+  query_source: issue_mentions
   relevant_files:
   - src/click/decorators.py
   relevant_symbols:
   - src/click/decorators.py::version_option
   - src/click/decorators.py::version_option.callback
   label_source: fix_commit
-  source_ref: https://github.com/pallets/click/pull/3582
-  status: candidate
+  source_ref: https://github.com/pallets/click/issues/2331
+  status: reviewed
   split: dev
   notes: 'fix commit bec59289d8cf9b9b4010642b2fee483e5f8eeefc: Fix `package_name` resolution when top-level
-    module differs from distribution name. LEAKAGE RISK: query from PR text, not an issue'
+    module differs from distribution name. query from issue (mentions); fix PR https://github.com/pallets/click/pull/3582
+    | REVIEW 2026-11-08: PR reopens and fixes #2331; issue links to decorators.py (names the file)'
 - id: click-762c97e
-  query: "Fix double-bracketing of choices in synopsis\n\nA small rendering issue of choices being enclosed\
-    \ into double-brackets when argument is optional.\r\n\r\nIssue was likely unnoticed in the original\
-    \ https://github.com/pallets/click/issues/1272 / https://github.com/pallets/click/issues/1273 PR.\r\
-    \n\r\nThis mirrors the similar fix I implemented for commands in https://github.com/pallets/click/pull/3507"
+  query: Help usage line shows choices in double brackets, like `[[a|b|c]]`, when the argument is optional.
+  query_source: author_rewrite
   relevant_files:
   - src/click/core.py
   relevant_symbols:
   - src/click/core.py::Argument.make_metavar
   label_source: fix_commit
   source_ref: https://github.com/pallets/click/pull/3578
-  status: candidate
+  status: reviewed
   split: heldout
   notes: 'fix commit 762c97eef7c1b3779678992f26a553a2a8c80793: Fix double-bracketing of choices in synopsis.
-    LEAKAGE RISK: query from PR text, not an issue'
+    query from issue (mentions); fix PR https://github.com/pallets/click/pull/3578 | REVIEW 2026-11-08:
+    mentioned issue #1272 is the 2019 change that caused the bug, not this symptom; query rewritten from
+    PR #3578''s symptom sentence'
 - id: click-051bb0f
-  query: "Do not let the GC close a borrowed `stdout`\n\nComplete the partial fix proposed in https://github.com/pallets/click/pull/3482\
-    \ for https://github.com/pallets/click/issues/3449.\r\n\r\nThis PR reproduce the case highlighted\
-    \ in #3449 where a stream that is not managed by the pager machinery is closed by it unconditionally.\r\
-    \n\r\nAs  extra bonuses:\r\n- replace `_SkipClose` with `utils.KeepOpenFile`\r\n- document `KeepOpenFile`\r\
-    \n- eliminate a dead `elif isinstance(stream, t.BinaryIO)` branch as non-buffered text streams can\
-    \ be yielded as-is\r\n\r\nThis is a follow up of #3482 which is a follow up of #3405 which is a follow\
-    \ up of #1572.\r\n\r\nCC @ChrisPappalardo @AndreasBackx @craigds"
+  query: "\"I/O operation on closed file\" error with CliRunner and echo_via_pager under 8.4\n\nWhen `echo_via_pager`\
+    \ is used in the command, `CliRunner.invoke` fails with:\n\n> ValueError: I/O operation on closed\
+    \ file.\n\nThis started happening with Click 8.4, does not happen with 8.3.3.\n\nReproducer:\n```python\n\
+    from click import command, echo_via_pager\nfrom click.testing import CliRunner\n\n@command()\ndef\
+    \ cli():\n    echo_via_pager(\"Hello, Click!\")\n\nrunner = CliRunner()\nrunner.invoke(cli)\n```\n\
+    \nTraceback:\n```\nTraceback (most recent call last):\n  File \".../echo_via_pager.py\", line 11,\
+    \ in <module>\n    runner.invoke(cli)\n    ~~~~~~~~~~~~~^^^^^\n  File \".../.venv/echo-via-pager/lib/python3.13/site-packages/click/testing.py\"\
+    , line 676, in invoke\n    sys.stdout.flush()\n    ~~~~~~~~~~~~~~~~^^\nValueError: I/O operation on\
+    \ closed file.\n```\n\nEnvironment:\n\n- OS: Ubuntu 24.04.4, Linux 6.17\n- Python version: 3.13.5\n\
+    - Click version: 8.4"
+  query_source: issue_mentions
   relevant_files:
   - src/click/_termui_impl.py
-  - src/click/utils.py
   relevant_symbols:
-  - src/click/_termui_impl.py::<module>
   - src/click/_termui_impl.py::get_pager_file
   - src/click/_termui_impl.py::_pipepager
   - src/click/_termui_impl.py::_tempfilepager
   - src/click/_termui_impl.py::_nullpager
   label_source: fix_commit
-  source_ref: https://github.com/pallets/click/pull/3533
-  status: candidate
+  source_ref: https://github.com/pallets/click/issues/3449
+  status: reviewed
   split: heldout
   notes: 'fix commit 051bb0f30b545cf7426deef819811815297c2798: Do not let the GC close a borrowed `stdout`.
-    LEAKAGE RISK: query from PR text, not an issue'
-- id: click-bff780f
-  query: "Pre-8.4.2 release changelog and doc fixes\n\nInconsistencies I spotted after 8.4.1 release:\r\
-    \n\r\n- Missing PR references in changelog entries:\r\n  - #3493\r\n  - #3482\r\n  - #3484\r\n  -\
-    \ #3471\r\n  - #3478\r\n- Changelog style and formatting\r\n- `.. versionadded::` admonition styling\r\
-    \n- rST to Markdown rewrite format\r\n\r\nThis is a WIP PR that I will use along the `stable` branch\
-    \ development cycle and is to be merged before its release.\r\n\r\nBefore removing the `draft` status,\
-    \ review all changes in the pending release diff: https://github.com/pallets/click/compare/8.4.1...stable\r\
-    \n\r\nFollow up on https://github.com/pallets/click/pull/3495."
-  relevant_files:
-  - src/click/_termui_impl.py
-  relevant_symbols:
-  - src/click/_termui_impl.py::get_pager_file
-  label_source: fix_commit
-  source_ref: https://github.com/pallets/click/pull/3498
-  status: candidate
-  split: heldout
-  notes: 'fix commit bff780ff9df7a8d0a271db2f80c17c7be32dc2a1: Fix layout, align full version. LEAKAGE
-    RISK: query from PR text, not an issue'
+    query from issue (mentions); fix PR https://github.com/pallets/click/pull/3533 | REVIEW 2026-11-08:
+    PR completes the fix for #3449'
 - id: click-9a2d169
   query: "`types`: fix variance issues and improve type coverage\n\nThe generic types in `click.types`\
     \ were all parametrized using an invariant type parameter. This can easily lead to unexpected type\
@@ -228,62 +218,80 @@ cases:
     \ the type coverage by 2.18% (91.5% -> 93.68%).\n\nI realize there are quite a lot of changes here.\
     \ But I was afraid that spreading these out over multiple PRs would result in a merge conflict mess.\
     \ But if you want me to split this up anyway, then that's also fine as far as I'm concerned."
+  query_source: pr_text
   relevant_files:
   - src/click/types.py
   relevant_symbols:
   - src/click/types.py::<module>
+  - src/click/types.py::FuncParamTypeInfoDict
+  - src/click/types.py::ChoiceInfoDict
+  - src/click/types.py::NumberRangeInfoDict
   label_source: fix_commit
   source_ref: https://github.com/pallets/click/pull/3450
-  status: candidate
+  status: rejected
   split: dev
   notes: 'fix commit 9a2d169fcf5c3cce7b0cd5971ca2786e1f72c210: fix generic typed dict `TypeError` on Python
-    3.10. LEAKAGE RISK: query from PR text, not an issue'
+    3.10. LEAKAGE RISK: query from PR text, not an issue | REVIEW 2026-11-08: query is PR text (names
+    the fix); rewrite later or leave rejected'
 - id: click-b7e5fd4
-  query: "Backport #3504 from `main` to `stable` branch\n\nMy intention was to merge https://github.com/pallets/click/pull/3504\
-    \ to `stable` to include it for the upcoming 8.4.2 release, but was distracted by the topic of the\
-    \ PR itself and forgot to retarget the base branch of the PR from `main` to `stable`. This is the\
-    \ well known issue discussed at https://github.com/pallets/click/discussions/3337.\r\n\r\nTo fix this,\
-    \ this PR just cherry-pick the c3535905 commit from `main` and target `stable` inclusion. The next\
-    \ sync of `stable` to `main` will be clean and be reconciled automaticcaly by a forward-merge.\r\n\
-    \r\nAs a bonus, I added the missing changelog entry for #3504, updated the admonition and added a\
-    \ regression test."
+  query: "Multi-line help text is not handled correctly in fish\n\nMulti-line help text (e.g. `help=\"\
+    \\b\\nAttachment with explicit mimetype,\\n--at image.jpg image/jpeg\"`) causes error when doing shell\
+    \ completion in fish.\n\n# How to replicate\n\nFrom [simonw/llm](https://github.com/simonw/llm/blob/921fae9a0ad3d664a872e35e4639b16089b61c1d/llm/cli.py#L365-L373):\n\
+    \n```py\n@click.option(\n    \"attachment_types\",\n    \"--at\",\n    \"--attachment-type\",\n  \
+    \  type=(str, str),\n    multiple=True,\n    callback=attachment_types_callback,\n    help=\"\\b\\\
+    nAttachment with explicit mimetype,\\n--at image.jpg image/jpeg\",\n)\n```\n\nType `llm --`, then\
+    \ press <kbd>Tab</kbd> to complete, observe the following error output:\n\n```shellsession\n$ llm\
+    \ --\nstring split: --at image.jpg image/jpeg: unknown option\n\n/opt/homebrew/share/fish/vendor_completions.d/llm.fish\
+    \ (line 1):\nstring split \",\" $completion\n^\nin command substitution\n\tcalled on line 5 of file\
+    \ /opt/homebrew/share/fish/vendor_completions.d/llm.fish\nin function '_llm_completion'\nin command\
+    \ substitution\n\n(Type 'help string' for related documentation)\ntest: Missing argument at index\
+    \ 3\n= dir\n      ^\n/opt/homebrew/share/fish/vendor_completions.d/llm.fish (line 7):\n        if\
+    \ test $metadata[1] = \"dir\";\n           ^\nin function '_llm_completion'\nin command substitution\n\
+    test: Missing argument at index 3\n= file\n       ^\n/opt/homebrew/share/fish/vendor_completions.d/llm.fish\
+    \ (line 9):\n        else if test $metadata[1] = \"file\";\n                ^\nin function '_llm_completion'\n\
+    in co"
+  query_source: issue_closes
   relevant_files:
   - src/click/shell_completion.py
   relevant_symbols:
-  - src/click/shell_completion.py::<module>
+  - src/click/shell_completion.py::_SOURCE_FISH
   - src/click/shell_completion.py::FishComplete.format_completion
   label_source: fix_commit
-  source_ref: https://github.com/pallets/click/pull/3508
-  status: candidate
+  source_ref: https://github.com/pallets/click/issues/3043
+  status: reviewed
   split: heldout
   notes: 'fix commit b7e5fd4cc7de70280eccd39f2bb956df617e5519: Fix broken fish completion and multiline
-    help string. LEAKAGE RISK: query from PR text, not an issue'
+    help string. query from issue (closes); fix PR https://github.com/pallets/click/pull/3504 | REVIEW
+    2026-11-08: issue closed by original PR #3504 (miner followed backport #3508)'
 - id: click-7d05a59
-  query: "Fix `get_parameter_source()` during type conversion and eager callbacks\n\n### Summary \r\n\r\
-    \nClick 8.4.0 moved `set_parameter_source()` to after `process_value()` when fixing flag-group arbitration\
-    \ ([#3403](https://github.com/pallets/click/issues/3403), [#3404](https://github.com/pallets/click/pull/3404)).\
-    \ That broke a case wasn't meant to change: anything that calls `get_parameter_source()` during type\
-    \ conversion or in an eager callback saw `None`, even though `consume_value()` had already figured\
-    \ out where the value came from ([#3458](https://github.com/pallets/click/issues/3458)).\r\n\r\nThis\
-    \ is affecting Flask: with Click 8.4.0, `FLASK_DEBUG=1` in the environment was ignored because `_set_debug`\
-    \ runs as an eager callback and could no longer see that the `--debug` flag was only at its default\
-    \ ([pallets/flask#6025](https://github.com/pallets/flask/issues/6025)).\r\n\r\nThe fix is to record\
-    \ the source right after `consume_value()` and before `process_value()`, matching 8.3.3 timing for\
-    \ callbacks and custom types. Flag-group arbitration is the same as today. \r\n\r\nThere is a second,\
-    \ narrower issue on the same code path: recording the source early means a *losing* option in a feature-switch\
-    \ group briefly overwrites `_parameter_source` before arbitration runs.  I am solving it by restoring\
-    \ the previous source when an option loses the slot. That path is easy to miss in tests (shared `opts`\
-    \ may give the loser the same source as the winner), so there is a dedicated case in `test_bool_flag_group"
+  query: "`get_parameter_source()` returns `None` in 8.4.0\n\nStarting with 8.4, get_parameter_source()\
+    \ returns None.\n\nRepro:\n\n```python\nimport click\n\nclass Source(click.ParamType):\n    name =\
+    \ \"source\"\n    def convert(self, value, param, ctx):\n        return {'value': value, 'source':\
+    \ ctx.get_parameter_source(param.name)}\n\n@click.command\n@click.option('--default', type=Source(),\
+    \ default='/tmp/file')\n@click.option('--nodefault', type=Source())\ndef main(default, nodefault):\n\
+    \    print(\"default:\", default)\n    print(\"nodefault:\", nodefault)\n\nif __name__ == '__main__':\n\
+    \    main()\n```\n\nOutput:\n\n```console\n$ pip install click==8.4.0 -q\n$ python source.py     \
+    \             \ndefault: {'value': '/tmp/file', 'source': None}\nnodefault: None\n$ python source.py\
+    \ --default cli --nodefault cli\ndefault: {'value': 'cli', 'source': None}\nnodefault: {'value': 'cli',\
+    \ 'source': None}\n\n$ pip install click==8.3.3 -q                   \n$ python source.py        \
+    \                      \ndefault: {'value': '/tmp/file', 'source': <ParameterSource.DEFAULT: 5>}\n\
+    nodefault: None\n$ python source.py --default cli --nodefault cli\ndefault: {'value': 'cli', 'source':\
+    \ <ParameterSource.COMMANDLINE: 2>}\nnodefault: {'value': 'cli', 'source': <ParameterSource.COMMANDLINE:\
+    \ 2>}\n```\n\nEnvironment:\n\n- Python version: 3.14.4 (seems to happen on all versions, on both macOS\
+    \ and Linux)\n- Click version: 8.4.0"
+  query_source: issue_closes
   relevant_files:
   - src/click/core.py
   relevant_symbols:
   - src/click/core.py::Parameter.handle_parse_result
   label_source: fix_commit
-  source_ref: https://github.com/pallets/click/pull/3484
-  status: candidate
+  source_ref: https://github.com/pallets/click/issues/3458
+  status: reviewed
   split: dev
   notes: 'fix commit 7d05a59b9d46a415d85937630d1d812cf477f60a: Fix get_parameter_source() during type
-    conversion and eager callbacks. LEAKAGE RISK: query from PR text, not an issue'
+    conversion and eager callbacks. query from issue (closes); fix PR https://github.com/pallets/click/pull/3484
+    | REVIEW 2026-11-08: issue #3458 closed by fix PR (''fixes [#3458](...)''); #3403 was the change that
+    caused the bug'
 - id: click-c6bf75f
   query: "`launch()` cannot locate files with spaces in the name on Windows\n\n_Related to #2868 but with\
     \ files and `locate=True`_\n\n## Problem\n\nWhen a Windows program uses `click.launch(some_path, locate=True)`\
@@ -301,16 +309,18 @@ cases:
     click.launch(str(failing_folder), locate=True)\n\n# Wrap with powershell\nsubprocess.run(\n    [\n\
     \        \"powershell\",\n        \"-Command\",\n        f\"explorer /select,{failing_folder!s}\"\
     ,\n    ],\n    check=True,\n)\n```\n\nEnvironme"
+  query_source: issue_closes
   relevant_files:
   - src/click/_termui_impl.py
   relevant_symbols:
   - src/click/_termui_impl.py::open_url
   label_source: fix_commit
   source_ref: https://github.com/pallets/click/issues/2994
-  status: candidate
+  status: reviewed
   split: dev
   notes: 'fix commit c6bf75fa74bff6523375cf91f97af0a7aae85fce: Fixes windows specific error regarding
-    spaces in filepaths for open_url.. query from issue; fix PR https://github.com/pallets/click/pull/3478'
+    spaces in filepaths for open_url.. query from issue (closes); fix PR https://github.com/pallets/click/pull/3478
+    | REVIEW 2026-11-08: issue closed by fix PR'
 - id: click-32ae2ac
   query: "Choice autocomplete incorrect for enums\n\nWhen using enums, the autocomplete doesn't give a\
     \ value that works, as it doesn't use the same code to normalize. \n\nUse an enum like\n```\nimport\
@@ -318,13 +328,840 @@ cases:
     ```\n\nThe accepted value for the argument will be \"foo\", but the autocompleted value is \"MyEnum.foo\"\
     \n\nEnvironment:\n\n- Python version: 3.13.4\n- Click version: 8.2.1\n\nI think I know how to fix\
     \ it roughly, so I can open a PR."
+  query_source: issue_closes
   relevant_files:
   - src/click/types.py
   relevant_symbols:
   - src/click/types.py::Choice.shell_complete
   label_source: fix_commit
   source_ref: https://github.com/pallets/click/issues/3015
-  status: candidate
+  status: reviewed
   split: dev
   notes: 'fix commit 32ae2acd3474a57d2450ea849545b2e1258bf76a: choice shell autocompletion to use normalize_choice().
-    query from issue; fix PR https://github.com/pallets/click/pull/3471'
+    query from issue (closes); fix PR https://github.com/pallets/click/pull/3471 | REVIEW 2026-11-08:
+    issue closed by fix PR'
+- id: click-0551bf5
+  query: 'Empty output from `HelpFormatter.write_usage` for a program without arguments
+
+
+    If no `args` are passed to `HelpFormatter.write_usage`, the Usage line is not printed.
+
+
+    ### Reproduction
+
+
+    ```python
+
+    import click
+
+
+    f = click.HelpFormatter()
+
+    f.write_usage("program")
+
+    print(f.getvalue())
+
+    ```
+
+
+    ### Expected output
+
+    ```
+
+    Usage: program
+
+    ```
+
+
+    ### Actual output
+
+    (an empty line)
+
+
+    ### Environment
+
+
+    - Python version: 3.12.3
+
+    - Click version: 8.3.1
+
+
+    ### Additional information
+
+
+    We use `click` for a CLI program with interactive mode. We are about to use `click.HelpFormatter`
+    to print help for internal commands, some of which do not accept any arguments (`exit`, for example).'
+  query_source: issue_closes
+  relevant_files:
+  - src/click/formatting.py
+  relevant_symbols:
+  - src/click/formatting.py::HelpFormatter.write_usage
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/3360
+  status: reviewed
+  split: dev
+  notes: 'fix commit 0551bf53588ae87f462d336f24f853a156fefe3a: Fix `HelpFormatter.write_usage` producing
+    spurious characters. query from issue (closes); fix PR https://github.com/pallets/click/pull/3434
+    | REVIEW 2026-11-08: issue closed by fix PR; EASY: query names the labeled function'
+- id: click-0f71fe7
+  query: "\"default\" behaviour in Click 8.3.x changes with enable/disable boolean flag pair\n\nIn click\
+    \ 8.2.1, defining a boolean option with both a \"enable\" and \"disable\" flag option works with the\
+    \ following logic:\n```\nimport click\n\n@click.command(\"foo\")\n@click.option(\"--without-xyz\"\
+    , \"enable_xyz\", flag_value=False)\n@click.option(\"--with-xyz\", \"enable_xyz\", flag_value=True,\
+    \ default=True)\ndef foo(enable_xyz):\n    print(f\"enable_xyz = {enable_xyz}\")\n\nfoo()\n```\n\n\
+    With this code, using click 8.2.1:\n* `python foo.py --with-xyz` returns True\n* `python foo.py --without-xyz`\
+    \ returns False\n* `python foo.py --with-xyz --without-xyz` returns False\n* `python foo.py --without-xyz\
+    \ --with-xyz` returns True\n* `python foo.py` returns False\n\nIn click 8.3.0, the output is the same\
+    \ for every case except the \"default\"  case - `python foo.py` returns True.\n\nThis is an extension\
+    \ of #3111; this [pattern is used in MkDocs](https://github.com/mkdocs/mkdocs/blob/2862536793b3c67d9d83c33e0dd6d50a791928f8/mkdocs/__main__.py#L257)\
+    \ (as of MkDocs 1.6.1) (see mkdocs/mkdocs#4032).\n\nHowever, the fix for #3111 (#3239) doesn't fix\
+    \ this edge case.\n\nThe Properdocs fork of MkDocs [has worked around the issue](https://github.com/ProperDocs/properdocs/pull/14/files).\n\
+    \nEnvironment:\n\n- Python version: 3.12, 3.13, 3.14\n- Click version: 8.3.0, 8.3.3"
+  query_source: issue_mentions
+  relevant_files:
+  - src/click/core.py
+  relevant_symbols:
+  - src/click/core.py::Context.__init__
+  - src/click/core.py::Parameter.__init__
+  - src/click/core.py::Parameter.handle_parse_result
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/3403
+  status: candidate
+  split: dev
+  notes: 'fix commit 0f71fe771ceefd5715b3b375c9b2e3a701c0648e: Fix dual-option arbitration to respect
+    explicit defaults. query from issue (mentions); fix PR https://github.com/pallets/click/pull/3404'
+- id: click-a09c1c6
+  query: "`@click.Option` with `'hide_input' = True` (used for password) and custom `type` parameter doesn't\
+    \ show custom error message\n\nI use @click.Option with 'hide_input' = True and custom 'type' parameter\
+    \ for password prompt with raise click.BadParameter (it inheriths class UsageError). And if the password\
+    \ failed the code doesn't show custom error message, but standard message \"Error: The value you entered\
+    \ was invalid\"\n\nStandard message comes from termui.py file: ~172 line - \n```python\n        except\
+    \ UsageError as e:\n            if hide_input:\n                echo(_(\"Error: The value you entered\
+    \ was invalid.\"), err=err)\n            else:\n                echo(_(\"Error: {e.message}\").format(e=e),\
+    \ err=err)  # noqa: B306\n            continue\n```\nBecause it checks hide_input parameter and if\
+    \ it True (and it is really True as i hide_input because of the password) it give the error \"Error:\
+    \ The value you entered was invalid\". When hide_input is False - it gives me my custom message.\n\
+    \nIf i use click.ClickException exception class it give me my error, but stops the promt, so i have\
+    \ to start from the beginning.\nIf i make hide_input = False - the password is visible on the screen\
+    \ and i recieve my custom message. But it is wrong for password entry.\n\nHere is the example how\
+    \ to replicate my error. \nRun the code and enter \"1234\".\nThe message i expect \"Error: Your password\
+    \ is week. Use 'Minimum eight characters, at least one letter and one number\"\n\n```python\nimport\
+    \ click\nimport re\n\nclass PassRequir"
+  query_source: issue_closes
+  relevant_files:
+  - src/click/termui.py
+  relevant_symbols:
+  - src/click/termui.py::prompt
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/2809
+  status: candidate
+  split: heldout
+  notes: 'fix commit a09c1c655eef3d43181eb46036b66cf058d72df4: fix: show custom error message in prompt
+    with hide_input=True. query from issue (closes); fix PR https://github.com/pallets/click/pull/3256'
+- id: click-19fd4d6
+  query: "Multi-line help text is not handled correctly in fish\n\nMulti-line help text (e.g. `help=\"\
+    \\b\\nAttachment with explicit mimetype,\\n--at image.jpg image/jpeg\"`) causes error when doing shell\
+    \ completion in fish.\n\n# How to replicate\n\nFrom [simonw/llm](https://github.com/simonw/llm/blob/921fae9a0ad3d664a872e35e4639b16089b61c1d/llm/cli.py#L365-L373):\n\
+    \n```py\n@click.option(\n    \"attachment_types\",\n    \"--at\",\n    \"--attachment-type\",\n  \
+    \  type=(str, str),\n    multiple=True,\n    callback=attachment_types_callback,\n    help=\"\\b\\\
+    nAttachment with explicit mimetype,\\n--at image.jpg image/jpeg\",\n)\n```\n\nType `llm --`, then\
+    \ press <kbd>Tab</kbd> to complete, observe the following error output:\n\n```shellsession\n$ llm\
+    \ --\nstring split: --at image.jpg image/jpeg: unknown option\n\n/opt/homebrew/share/fish/vendor_completions.d/llm.fish\
+    \ (line 1):\nstring split \",\" $completion\n^\nin command substitution\n\tcalled on line 5 of file\
+    \ /opt/homebrew/share/fish/vendor_completions.d/llm.fish\nin function '_llm_completion'\nin command\
+    \ substitution\n\n(Type 'help string' for related documentation)\ntest: Missing argument at index\
+    \ 3\n= dir\n      ^\n/opt/homebrew/share/fish/vendor_completions.d/llm.fish (line 7):\n        if\
+    \ test $metadata[1] = \"dir\";\n           ^\nin function '_llm_completion'\nin command substitution\n\
+    test: Missing argument at index 3\n= file\n       ^\n/opt/homebrew/share/fish/vendor_completions.d/llm.fish\
+    \ (line 9):\n        else if test $metadata[1] = \"file\";\n                ^\nin function '_llm_completion'\n\
+    in co"
+  query_source: issue_closes
+  relevant_files:
+  - src/click/shell_completion.py
+  relevant_symbols:
+  - src/click/shell_completion.py::_SOURCE_FISH
+  - src/click/shell_completion.py::FishComplete.format_completion
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/3043
+  status: candidate
+  split: dev
+  notes: 'fix commit 19fd4d6e18bc9fce451f92f422696b11169faa57: Fix: Ensure fish completion handles multiline
+    help strings correctly (#3126). query from issue (closes); fix PR https://github.com/pallets/click/pull/3126'
+- id: click-c5cced7
+  query: 'fix: `_termui_impl.open_url()` — ''start'' on Windows is a cmd built-in, not an executable
+
+
+    fix: _termui_impl.open_url() — ''start'' on Windows is a cmd built-in command, not an executable'
+  query_source: pr_text
+  relevant_files:
+  - src/click/_termui_impl.py
+  relevant_symbols:
+  - src/click/_termui_impl.py::open_url
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/pull/3186
+  status: candidate
+  split: dev
+  notes: 'fix commit c5cced7b3096804567688df645194e3ed3dfa88b: fix: `_termui_impl.open_url()` — ''start''
+    on Windows is a cmd built-in, not an executable (#3186). LEAKAGE RISK: query from PR text, not an
+    issue'
+- id: click-2468b70
+  query: 'backspace and line-wrapping acting strange on Linux
+
+
+    When running any app using click.prompt on linux, something weird happens with backspace.
+
+
+    ### Recording
+
+    This screen recording shows 2 letters being removed when I hit backspace once, and the prompt being
+    deleted when I backspace the entire line.
+
+
+    ![Image](https://github.com/user-attachments/assets/dd505b9f-b412-49e0-aceb-d878cd291552)
+
+    ([asciinema link](https://asciinema.org/a/qWORhMIcnEuG3iLtLvm9FwkhY))
+
+
+    The returned input is also different from the text shown on screen.
+
+
+    ### Environment:
+
+
+    - Python version: 3.13.3
+
+    - Click version: 8.2.1
+
+
+    ### Cause:
+
+
+    termui contains a workaround for windows where it prints a readline prompt itself. On linux, this
+    confuses readline so things like backspace/ctrl-backspace and line wrapping don''t work correctly.
+
+
+    This can be fixed by letting readline handling the prompt on linux: #2969'
+  query_source: issue_closes
+  relevant_files:
+  - src/click/termui.py
+  relevant_symbols:
+  - src/click/termui.py::_readline_prompt
+  - src/click/termui.py::prompt.prompt_func
+  - src/click/termui.py::confirm
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/2968
+  status: candidate
+  split: dev
+  notes: 'fix commit 2468b70997a6ec27ced4b4867954c90da3f92075: Fix readline backspace/line-wrapping on
+    linux (#2969). query from issue (closes); fix PR https://github.com/pallets/click/pull/2969'
+- id: click-3a3e035
+  query: "Modifying `default_map` in callback behaves differently between click 7.1.2 and 8.0.0\n\nHi,\r\
+    \n\r\nI'm trying to upgrade an application from click 7 to click 8 but I'm running into issues.\r\n\
+    I was able to reduce the issue to a minimal reproducible example.\r\n\r\nThe following program behaves\
+    \ differently in 7.1.2 and 8.0.0\r\n\r\n```\r\nimport click\r\n\r\ndef load_settings(ctx, param, value):\r\
+    \n    # breakpoint()\r\n    if (value is not None):\r\n        ctx.default_map['general_foo'] = value\
+    \ + 'foo'\r\n        ctx.default_map['general_bar'] = value + 'bar'\r\n\r\ndef sanitize_foo(ctx, param,\
+    \ val):\r\n    click.echo('sanitizing foo')\r\n    return val\r\n\r\ndef sanitize_bar(ctx, param,\
+    \ val):\r\n    click.echo('sanitizing bar')\r\n    return val\r\n\r\ndef print_help(ctx, param, value):\r\
+    \n    if value:\r\n        ctx.exit()\r\n\r\n@click.command()\r\n@click.option('--general-foo', '--foo',\
+    \ default=None, nargs=2, callback=sanitize_foo)\r\n@click.option('--general-bar', '--bar', default=None,\
+    \ callback=sanitize_bar)\r\n@click.option('--settings', callback=load_settings, default=None, is_eager=True)\r\
+    \n@click.pass_context\r\ndef hello(ctx, settings, general_bar, general_foo):\r\n    click.echo(general_foo)\r\
+    \n    click.echo(general_bar)\r\n\r\n@click.group()\r\n@click.option('--settings', hidden=True)\r\n\
+    @click.pass_context\r\ndef cli(ctx, settings):\r\n    ctx.default_map['hello'] = { 'settings': settings\
+    \ }\r\n\r\ncli.add_command(hello)\r\n\r\nif __name__ == '__main__':\r\n    cli(default_map={})\r\n\
+    ```\r\n\r\nIn click 7.1.2:\r\n```\r\n(.venv) dezsiszabi@SZABI-PC:~/projects/c"
+  query_source: issue_mentions
+  relevant_files:
+  - src/click/core.py
+  relevant_symbols:
+  - src/click/core.py::Parameter.consume_value
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/2745
+  status: candidate
+  split: dev
+  notes: 'fix commit 3a3e0350b6a2ea3e799440d48e779acabcf44de9: Split string values from `default_map`
+    for multi-value parameters. query from issue (mentions); fix PR https://github.com/pallets/click/pull/3364'
+- id: click-1241aba
+  query: "Nested command option shadowing `-h` prints wrong suggestion\n\nClick prints an incorrect suggestion\
+    \ when using a combination of nested command and required argument. This happens when the nested command\
+    \ shadows the `-h` option shortcut of the main command which Click apparently tolerates.\n\n## Replication\n\
+    \nSee https://github.com/tumidi/click-subcommand-help-message.\n\n```shell-session\n$ click-test-cli\
+    \ foo\nUsage: click-test-cli foo [OPTIONS] REQUIRED_ARG\nTry 'click-test-cli foo -h' for help.\n\n\
+    Error: Missing argument 'REQUIRED_ARG'.\n```\n\nBut, actually running the suggested `click-test-cli\
+    \ foo -h` prints\n\n```shell-session\n$ click-test-cli foo -h\nError: Option '-h' requires an argument.\n\
+    ```\n\nInterestingly, Click correctly detects the shadowing of the option when printing the foo command\
+    \ help and prints a consistent help page.\n\n```shell-session\n$ click-test-cli foo --help\nUsage:\
+    \ click-test-cli foo [OPTIONS] REQUIRED_ARG\n\nOptions:\n  -h, --host TEXT\n  --help           Show\
+    \ this message and exit.\n```\n\n### Python code\n\n```py\n@click.group(context_settings={\"help_option_names\"\
+    : [\"-h\", \"--help\"]})\ndef cli():\n    pass\n\n@click.command()\n@click.argument(\"required_arg\"\
+    )\n@click.option(\"--host\", \"-h\", \"host\", default=\"localhost\")\ndef foo(required_arg, host):\n\
+    \    click.echo(f\"Foo command required_arg={required_arg} host={host}\")\n\ncli.add_command(foo)\n\
+    ```\n\n## Possible solutions\n\nFix the generated message, so it prints `Try 'click-test-cli foo --help'\
+    \ for help.` in this case.\n\nEnvironment:\n\n- Python"
+  query_source: issue_closes
+  relevant_files:
+  - src/click/exceptions.py
+  relevant_symbols:
+  - src/click/exceptions.py::UsageError.show
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/2790
+  status: candidate
+  split: dev
+  notes: 'fix commit 1241abaed4e441582a21f4bf90c8482de02b92df: Use non-shadowed help option name in error
+    hint. query from issue (closes); fix PR https://github.com/pallets/click/pull/3208'
+- id: click-8762c77
+  query: "`CliRunner` terminates with `io.UnsupportedOperation` when using `faulthandler`\n\nIt looks\
+    \ like the output redirection for `CliRunner` doesn't play nicely with Python's `faulthandler` library,\
+    \ as it terminates prematurely with the following backtrace (slightly modified to hide local filesystem\
+    \ details):\n\n```pytb\nTraceback (most recent call last):\n  File \"$CONDA_PREFIX/lib/python3.11/site-packages/click/testing.py\"\
+    , line 408, in invoke\n    return_value = cli.main(args=args or (), prog_name=prog_name, **extra)\n\
+    \                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$CONDA_PREFIX/lib/python3.11/site-packages/click/core.py\"\
+    , line 1078, in main\n    rv = self.invoke(ctx)\n         ^^^^^^^^^^^^^^^^\n  File \"$CONDA_PREFIX/lib/python3.11/site-packages/click/core.py\"\
+    , line 1434, in invoke\n    return ctx.invoke(self.callback, **ctx.params)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\
+    \  File \"$CONDA_PREFIX/lib/python3.11/site-packages/click/core.py\", line 783, in invoke\n    return\
+    \ __callback(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"./test_click.py\"\
+    , line 12, in main\n    faulthandler.enable()\nio.UnsupportedOperation: fileno\n```\n\nCode for `test_click.py`\
+    \ that replicates the problem:\n\n```python\nimport click\nfrom click.testing import CliRunner\nimport\
+    \ faulthandler\nimport traceback\n\n@click.command()\n@click.option('--flag', type=bool, default=True)\n\
+    def main(flag):\n    print(\"Executing main function...\")\n    if flag:\n      print(\"Registering\
+    \ f"
+  query_source: issue_closes
+  relevant_files:
+  - src/click/testing.py
+  relevant_symbols:
+  - src/click/testing.py::_NamedTextIOWrapper
+  - src/click/testing.py::_NamedTextIOWrapper.__init__
+  - src/click/testing.py::_NamedTextIOWrapper.close
+  - src/click/testing.py::_NamedTextIOWrapper.fileno
+  - src/click/testing.py::CliRunner.isolation
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/2865
+  status: candidate
+  split: dev
+  notes: 'fix commit 8762c7752cf1632d082c76922b15fef06ac3a2f1: Expose original file descriptor in `CliRunner`.
+    query from issue (closes); fix PR https://github.com/pallets/click/pull/3244'
+- id: click-c653ec8
+  query: "Using a class as a `flag_value` causes the default to be instantiated in click 8.3.0\n\nConsider\
+    \ the following code:\n\n```python\nimport click\n\nclass Foo:\n    pass\n\nclass Bar:\n    pass\n\
+    \n@click.command()\n@click.option(\"--foo\", \"ty\", flag_value=Foo, type=click.UNPROCESSED, default=True)\n\
+    @click.option(\"--bar\", \"ty\", flag_value=Bar, type=click.UNPROCESSED)\ndef main(ty):\n    click.echo(repr(ty))\n\
+    \nif __name__ == \"__main__\":\n    main()\n```\n\nWhen run with no arguments using click 8.3.0, this\
+    \ prints `<__main__.Foo object at 0x10bed92b0>`, indicating that `Foo` has been instantiated, which\
+    \ is not what I want.  When using an older version of click, the script outputs `<class '__main__.Foo'>`,\
+    \ which is what I want.\n\nIf the script is passed an explicit `--foo` or `--bar` option, a class\
+    \ is output, indicating that the problem lies with the default handling.\n\nChanging the `default=True`\
+    \ to `default=Foo` does not help."
+  query_source: issue_closes
+  relevant_files:
+  - src/click/core.py
+  relevant_symbols:
+  - src/click/core.py::Option.get_default
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/3121
+  status: candidate
+  split: heldout
+  notes: 'fix commit c653ec820093ed1dda41aae8d35bff7834b0344a: Reconcile default value passing and default
+    activation. query from issue (closes); fix PR https://github.com/pallets/click/pull/3239'
+- id: click-b96c260
+  query: "click.edit() Support Editor Paths Containing Spaces\n\n**Environment**\r\n* Python 3.6.5\r\n\
+    * click 6.7\r\n* Windows 7\r\n\r\nWhen using click.edit(), an editor with a space in the path throws\
+    \ an error. For example :  \"C:\\Program Files\\Sublime Text 3\\sublime_text.exe\"\r\n\r\nIf I put\
+    \ quotes around the path name in the subprocess.Popen call [here](https://github.com/pallets/click/blob/master/click/_termui_impl.py#L425)\
+    \ the problem is fixed.\r\n\r\n**Before**\r\n```python\r\n            c = subprocess.Popen('%s \"\
+    %s\"' % (editor, filename),\r\n                                 env=environ, shell=True)\r\n```\r\n\
+    \r\n**After**\r\n```python\r\n            c = subprocess.Popen('\"%s\" \"%s\"' % (editor, filename),\r\
+    \n                                 env=environ, shell=True)\r\n```"
+  query_source: issue_mentions
+  relevant_files:
+  - src/click/_termui_impl.py
+  relevant_symbols:
+  - src/click/_termui_impl.py::_pipepager
+  - src/click/_termui_impl.py::_tempfilepager
+  - src/click/_termui_impl.py::Editor.edit_files
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/1026
+  status: candidate
+  split: dev
+  notes: 'fix commit b96c2601af4e01341b4d2c0db494ebee4aef8f42: Document and fix command string sanitizing
+    with `shlex.split`. query from issue (mentions); fix PR https://github.com/pallets/click/pull/3245'
+- id: click-d340b0c
+  query: "semver.Version as default causing an error\n\nAny instance of `semver.Version` set as `default`\
+    \ in an option will lead to an error when Click tries to show it in the help text.\nThe problem seems\
+    \ to be that `Version` allows comparison to strings, and Click, when building the help text, tries\
+    \ to check the default value against an empty string `\"\"`, which cannot be parsed by `semver.Version`:\n\
+    \n```\n  File \".venv/lib/python3.12/site-packages/click/core.py\", line 3091, in get_help_extra\n\
+    \    elif default_value == \"\":\n         ^^^^^^^^^^^^^^^^^^^\n  File \".venv/lib/python3.12/site-packages/semver/version.py\"\
+    , line 52, in wrapper\n    return operator(self, other)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File\
+    \ \".venv/lib/python3.12/site-packages/semver/version.py\", line 467, in __eq__\n    return self.compare(other)\
+    \ == 0\n           ^^^^^^^^^^^^^^^^^^^\n  File \".venv/lib/python3.12/site-packages/semver/version.py\"\
+    , line 394, in compare\n    other = cls.parse(other)\n            ^^^^^^^^^^^^^^^^\n  File \".venv/lib/python3.12/site-packages/semver/version.py\"\
+    , line 644, in parse\n    raise ValueError(f\"{version} is not valid SemVer string\")\nValueError:\
+    \  is not valid SemVer string\n```\n\nThis can be replicated with the following code by trying to\
+    \ print the help text:\n\n<details>\n\n```python\nimport click\nfrom semver import Version\n\nclass\
+    \ SemverType(click.ParamType):\n    name = \"semver\"\n\n    def convert(self, value: str | Version,\
+    \ param: click.Parameter | None, ctx: click.Context | None) -> Version:\n        if is"
+  query_source: issue_closes
+  relevant_files:
+  - src/click/core.py
+  relevant_symbols:
+  - src/click/core.py::Option.get_help_extra
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/3298
+  status: candidate
+  split: dev
+  notes: 'fix commit d340b0c1202284a1b9d0ca892549208527d586ce: Fix speculative speculative empty string
+    check. query from issue (closes); fix PR https://github.com/pallets/click/pull/3299'
+- id: click-546f285
+  query: "Using a class as a `flag_value` causes the default to be instantiated in click 8.3.0\n\nConsider\
+    \ the following code:\n\n```python\nimport click\n\nclass Foo:\n    pass\n\nclass Bar:\n    pass\n\
+    \n@click.command()\n@click.option(\"--foo\", \"ty\", flag_value=Foo, type=click.UNPROCESSED, default=True)\n\
+    @click.option(\"--bar\", \"ty\", flag_value=Bar, type=click.UNPROCESSED)\ndef main(ty):\n    click.echo(repr(ty))\n\
+    \nif __name__ == \"__main__\":\n    main()\n```\n\nWhen run with no arguments using click 8.3.0, this\
+    \ prints `<__main__.Foo object at 0x10bed92b0>`, indicating that `Foo` has been instantiated, which\
+    \ is not what I want.  When using an older version of click, the script outputs `<class '__main__.Foo'>`,\
+    \ which is what I want.\n\nIf the script is passed an explicit `--foo` or `--bar` option, a class\
+    \ is output, indicating that the problem lies with the default handling.\n\nChanging the `default=True`\
+    \ to `default=Foo` does not help."
+  query_source: issue_mentions
+  relevant_files:
+  - src/click/core.py
+  relevant_symbols:
+  - src/click/core.py::Option.__init__
+  - src/click/core.py::Option.get_default
+  - src/click/core.py::Option
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/3121
+  status: candidate
+  split: dev
+  notes: 'fix commit 546f2851f414b07413777ebcae89b2c21a685252: Fix callable ``flag_value`` being instantiated
+    when used as a default. query from issue (mentions); fix PR https://github.com/pallets/click/pull/3225'
+- id: click-437e1e3
+  query: "Sentinel available in context during option callbacks\n\nSentinel is an implementation detail\
+    \ that is not intentionally exposed. However, it is in the context params during a callback: sentinel_in_callback.py\n\
+    \n```\nimport click\n\ndef _validate(ctx, param, value):\n\n    you_sentinel = ctx.params.get(\"you\"\
+    )\n    you_too_sentinel = ctx.params.get(\"you_too\")\n    print(f\"you: {you_sentinel}\")\n    print(f\"\
+    you_too: {you_too_sentinel}\")\n    print(f\"param: {param}\")\n    print(f\"value: {value}\")\n \
+    \   return value\n\n@click.group()\ndef basic():\n    pass\n\n@basic.command()\n@click.argument('you',\
+    \ required=False)\n@click.option('--you-too', )\n@click.option('--yall', callback=_validate)\n@click.pass_context\n\
+    def hello(ctx, you, you_too, yall):\n    click.echo('Hello World!')\n\nif __name__ == '__main__':\n\
+    \    basic()\n    # python -m sentinel_in_callback hello\n``` \n\n``` \n> python -m sentinel_in_callback\
+    \ hello\nyou: Sentinel.UNSET\nyou_too: Sentinel.UNSET\nparam: <Option yall>\nvalue: None\nHello World!\n\
+    ```"
+  query_source: issue_mentions
+  relevant_files:
+  - src/click/core.py
+  relevant_symbols:
+  - src/click/core.py::Parameter.process_value
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/3136
+  status: candidate
+  split: dev
+  notes: 'fix commit 437e1e3295c7ec979fc1bf285bb402ca20d847e7: Temporarily provide a fake context to the
+    callback to hide `UNSET` values as `None`. query from issue (mentions); fix PR https://github.com/pallets/click/pull/3137'
+- id: click-34723d1
+  query: '_pipepager() fails with mutli-call binaries
+
+
+    Programs such as BusyBox, Toybox and Coreutils (also gzib, bzip etc) in multi-call mode derive their
+    identity from the symlink. Resolving the symlink causes them to misbehave.
+
+
+    Environment:
+
+
+    - Python version: python3.12
+
+    - Click version: 8.2.1'
+  query_source: issue_closes
+  relevant_files:
+  - src/click/_termui_impl.py
+  relevant_symbols:
+  - src/click/_termui_impl.py::_pipepager
+  - src/click/_termui_impl.py::_tempfilepager
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/2943
+  status: candidate
+  split: heldout
+  notes: 'fix commit 34723d12b1e5abe1459813ce0596535da53b55d8: Fix _pipepager()/_tempfilepage() to work
+    with multi-call binaries. query from issue (closes); fix PR https://github.com/pallets/click/pull/2944'
+- id: click-1c20dc6
+  query: "`default=True` on feature flags is order-sensitive\n\nThe following code:\n\n```python\nimport\
+    \ click\n\n@click.command()\n@click.option(\"--red\", \"color\", flag_value=\"red\")\n@click.option(\"\
+    --green\", \"color\", flag_value=\"green\", default=True)\n@click.option(\"--blue\", \"color\", flag_value=\"\
+    blue\")\ndef main(color: str) -> None:\n    print(repr(color))\n\nif __name__ == \"__main__\":\n \
+    \   main()\n```\n\nwhen run with no arguments using click 8.2.1 outputs `'green'`, which is what I\
+    \ expect.  If click 8.3.0 is used instead, then it outputs `None` — but if the `--green` option is\
+    \ moved above the `--red` option in the script, click 8.3.0 will output `'green'`.\n\nI believe that\
+    \ the script should output `'green'` regardless of the declaration order of the options.\n\nEnvironment:\n\
+    \n- Python version: 3.13.7\n- Click version: 8.2.1 and 8.3.0"
+  query_source: issue_closes
+  relevant_files:
+  - src/click/core.py
+  relevant_symbols:
+  - src/click/core.py::Command.parse_args
+  - src/click/core.py::Parameter.handle_parse_result
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/3071
+  status: candidate
+  split: dev
+  notes: 'fix commit 1c20dc6e724cd5625faaa17b715ba928d44c08bf: Fix default handling to defer UNSET normalization.
+    query from issue (closes); fix PR https://github.com/pallets/click/pull/3079'
+- id: click-701b313
+  query: "Incorrect handling of quoted & escaped parameters for Fish completions\n\nCompletions for parameters\
+    \ in quotes, partially quoted or with escaped characters (e.g. whitespace) don't work properly for\
+    \ Fish shell.\n\nI believe the issue is that for fish completion, the incomplete paramater is passed\
+    \ through the `COMP_CWORD` environment variable and it's expected that it will be contained in `COMP_WORDS`\
+    \ as the last parameter. However, before doing this match `COMP_WORDS` is parsed, which quotes and\
+    \ unescapes the parameters, while `COMP_CWORD` is not causing the match to fail. See code [here](https://github.com/pallets/click/blob/91ac02718af3a0b88dbe282501c06642da0785fe/src/click/shell_completion.py#L392).\n\
+    \n## How to replicate\n\nConsider the following command\n\n```python\n@click.command()\n@click.argument('bar',\
+    \ type=click.Choice(('hello world',)))\ndef main(bar: str):\n    pass\n```\n\nTrying to complete `foo\
+    \ hello` in Fish will correctly return completion for `foo hello\\ world`.\n\nThe following incomplete\
+    \ commands will not return any completions\n- `foo hello\\ `\n- `foo \"hello`\n- `foo \"hello\"`\n\
+    \nEnvironment:\n\n- Python version: 3.13.5\n- Click version: 8.2.1"
+  query_source: issue_closes
+  relevant_files:
+  - src/click/shell_completion.py
+  relevant_symbols:
+  - src/click/shell_completion.py::FishComplete.get_completion_args
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/2995
+  status: candidate
+  split: dev
+  notes: 'fix commit 701b313160be12752e49b3f7cea32402c0969a69: Fix completions for quoted/escaped parameters
+    in Fish (#3013). query from issue (closes); fix PR https://github.com/pallets/click/pull/3013'
+- id: click-812b800
+  query: 'click.prompt and click.confirm argument prompt_suffix no longer works when suffix is empty
+
+
+    After #1836 and #2093 were merged the behavior of the `prompt_suffix` argument in the `click.prompt`
+    and `click.confirm` functions changed.
+
+
+    # Before these changes in click version 7.1.2
+
+
+    Prior to the #1836 and #2093 PRs when an empty `prompt_suffix` was passed, no suffix was applied to
+    the prompt.
+
+
+    Here''s how `prompt` used to behave
+
+
+    ```python
+
+    >>> import click
+
+    >>> click.prompt("test", prompt_suffix="")
+
+    testfoo
+
+    ''foo''
+
+    >>> click.prompt("test", prompt_suffix=" ")
+
+    test foo
+
+    ''foo''
+
+    ```
+
+
+    Notice that when a `prompt_suffix of `""` is passed, there is no suffix after the prompt text of `test`.
+    This is illustrated by how the text typed by the user (in this case `foo`) displays immediately after
+    the prompt without a space character.
+
+
+    # Current behavior in click 8.0.0 and newer
+
+
+    ```python
+
+    >>> import click
+
+    >>> click.prompt("test", prompt_suffix="")
+
+    test foo
+
+    ''foo''
+
+    >>> click.prompt("test", prompt_suffix=" ")
+
+    test foo
+
+    ''foo''
+
+    ```
+
+
+    Notice now that if you tell `prompt` to use no suffix, it still applies a space character suffix.
+
+
+    This is because the fixes in #1836 and #2093 presumes that the last character of the prompt is a space
+    character. It then [`rstrip`s the space character and adds the space character back in](https://github.com/pallets/click/pull/1836/files#diff-1f88635ce1d1f86bb7f9de29ef053bf8fc628a13530d1d2c6a69d0ad637e32cdR130-R133).
+    This doesn''t work if the last character of the prompt is not a '
+  query_source: issue_closes
+  relevant_files:
+  - src/click/termui.py
+  relevant_symbols:
+  - src/click/termui.py::prompt.prompt_func
+  - src/click/termui.py::confirm
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/3019
+  status: candidate
+  split: dev
+  notes: 'fix commit 812b8000f79c1fbb747a2de5114fc74515558857: Fix rendering when `prompt_suffix` is empty.
+    query from issue (closes); fix PR https://github.com/pallets/click/pull/3021'
+- id: click-a1235aa
+  query: "zsh completion still misbehaving in the presence of `:`\n\nGiven `foo` containing:\r\n\r\n```python\r\
+    \n#!/usr/bin/env python3\r\nfrom click.shell_completion import CompletionItem\r\nimport click\r\n\r\
+    \nclass Foo(click.ParamType):\r\n    def convert(self, value, param, ctx):\r\n        return value\r\
+    \n\r\n    def shell_complete(self, ctx, param, incomplete):\r\n        return [\r\n            CompletionItem(value=value,\
+    \ help=\"adsf\") for value in \r\n            [\"baz:quux\", \"spam:eggs\"]\r\n        ]\r\n\r\n@click.command()\r\
+    \n@click.argument(\"foo\", type=Foo())\r\ndef main(foo):\r\n    print(foo)\r\n```\r\n\r\nand running\
+    \ shell completion generation, followed by attempting to complete the command (indicated via `<Tab>`,\
+    \ produces:\r\n\r\n```\r\n⊙  PATH=$PWD:/Users/Julian/.local/share/virtualenvs/bowtie/bin/:$PATH\r\n\
+    ⊙  eval \"$(_FOO_COMPLETE=zsh_source ./foo)\"                                                    \
+    \                                                                                                \
+    \                                                                                                \
+    \                     \r\n⊙  foo <Tab>\r\nbaz   -- quux:adsf\r\nspam  -- eggs:adsf\r\n```\r\n\r\n\
+    rather than the expected:\r\n\r\n```\r\nbaz:quux   -- adsf\r\nspam:eggs -- adsf\r\n```\r\n\r\n\r\n\
+    \r\nThis seems to be a regression on #1812.\r\n\r\nThe fix mentioned there (of \"fake escaping\" the\
+    \ colons via `.replace(\":\", \"\\\\:\")` seems to work.\r\n\r\nEnvironment:\r\n\r\n- Python version:\r\
+    \n\r\n```\r\n⊙  python --version                                                                 \
+    \       "
+  query_source: issue_closes
+  relevant_files:
+  - src/click/shell_completion.py
+  relevant_symbols:
+  - src/click/shell_completion.py::ZshComplete.format_completion
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/2703
+  status: candidate
+  split: heldout
+  notes: 'fix commit a1235aacb1be55dc66ddcfefbf64dec44b6ab54d: Fix Zsh completions with colons (#2846).
+    query from issue (closes); fix PR https://github.com/pallets/click/pull/2846'
+- id: click-9caedb9
+  query: 'Flag value is always true when setting any envvar
+
+
+    Click 8.2.1 includes fixes related to boolean flags.
+
+
+    We’re encountering a specific issue described in [this comment](https://github.com/pallets/click/issues/2897#issuecomment-2873272069).
+    The comment appears in the thread for a different but related issue ([#2897](https://github.com/pallets/click/issues/2897)),
+    focused on a separate aspect of boolean flag handling. Maybe the issue was overlooked because the
+    discussion centered on the main issue.'
+  query_source: issue_mentions
+  relevant_files:
+  - src/click/core.py
+  - src/click/types.py
+  relevant_symbols:
+  - src/click/core.py::Option.__init__
+  - src/click/core.py::Option.get_default
+  - src/click/core.py::Option.resolve_envvar_value
+  - src/click/core.py::Option.value_from_envvar
+  - src/click/core.py::Option.consume_value
+  - src/click/types.py::BoolParamType
+  - src/click/types.py::BoolParamType.str_to_bool
+  - src/click/types.py::BoolParamType.convert
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/2952
+  status: candidate
+  split: dev
+  notes: 'fix commit 9caedb9206103dfb5465e1916bc2f13b9c10c0e4: Fix reconciliation of envvar with default,
+    flag_value and type parameters for flag options. query from issue (mentions); fix PR https://github.com/pallets/click/pull/2956'
+- id: click-ac6a2ac
+  query: "Completion for commands in nested groups is broken in Click 8.2.0\n\n## Summary\n\nIn Click\
+    \ 8.2.0, completion for commands in nested groups doesn't work as expected anymore. Instead of completing\
+    \ command options and/or arguments, completion infinitely repeats the command names for the group.\n\
+    \n## Example program\n\nInspired by the example in #2847 \n\nSave the following as `bin/nested` in\
+    \ a virtualenv\n\n```python\n#!/usr/bin/env python\n\n# nested\n\nimport click\n\ndef _complete_arg(ctx,\
+    \ _, incomplete):\n    values = [\n        \"foo\",\n        \"bar\",\n        \"foobar\",\n     \
+    \   \"baz\",\n    ]\n    return [v for v in values if v.startswith(incomplete)]\n\n@click.group\n\
+    def main():\n    ...\n\n@main.group\ndef subgroup():\n    ...\n\n@subgroup.command\n@click.option(\"\
+    --name\", help=\"Name of something.\")\n@click.argument(\"arg\", shell_complete=_complete_arg)\ndef\
+    \ compile(name: str | None, arg: str) -> None:\n    \"\"\"Test argument completion in nested groups.\"\
+    \"\"\n    click.echo(f\"{name=} {arg=}\")\n\nif __name__ == \"__main__\":\n    main.main()\n```\n\n\
+    Run `eval \"$(_NESTED_COMPLETE=bash_source nested)\"` to setup completion (for bash)\n\n## Completion\
+    \ behavior\n\n|Prefix|8.2.0 completion suggestions (unexpected behavior)|8.1.8 completion suggestions\
+    \ (expected behavior)|\n|-|-|-|\n|`nested`|`subgroup`|`subgroup`|\n|`nested subgroup`|`compile`|`compile`|\n\
+    |`nested subgroup compile`|`compile`|`foo     bar     foobar  baz`|\n|`nested subgroup compile f`|none|`foo\
+    \     foobar`|\n|`nested subgroup compile --`|`--help`|`--name  --help`|\n|`nested s"
+  query_source: issue_closes
+  relevant_files:
+  - src/click/shell_completion.py
+  relevant_symbols:
+  - src/click/shell_completion.py::_resolve_context
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/2906
+  status: candidate
+  split: dev
+  notes: 'fix commit ac6a2acfdb4550c35ce69ce54db502ba96c96324: Fix shell completion for nested groups.
+    query from issue (closes); fix PR https://github.com/pallets/click/pull/2935'
+- id: click-4fd2fea
+  query: "Click 8.2.0 ignores is_flag options that have a type\n\nClick 8.2.0 ignores the use of options\
+    \ defined with `is_flag` and `type=str`.\n\nOf course, combining `is_flag` and `type=str` does not\
+    \ make sense, but it happened in one of our projects. Click before 8.2.0 ignored `type=str` and processed\
+    \ this as expected for `is_flag`.\n\nClick 8.2.0 does not set a value for such an option.\n\nI could\
+    \ trace this change to PR #2829 - If I install click 8.2.0 and manually undo the change in `core.py`\
+    \ that is done by that PR, it works as before.\n\nTo reproduce:\n\n1. Have a file `main.py` with:\n\
+    \n```\nimport click\n\n@click.group(invoke_without_command=True)\n@click.option('-x', '--transpose',\
+    \ type=str, is_flag=True,\n              help='Transpose the output table.')\ndef cli(transpose):\n\
+    \    print(f\"Debug: transpose={transpose}\")\n    return 0\n```\n\n2. Reproduce with click 8.2.0:\n\
+    ```\n$ pip install click==8.2.0\n$ python -c \"import main,sys; sys.argv=['cli', '--transpose']; main.cli()\"\
+    \nDebug: transpose=None\n```\n\n3. Verify that click 8.2.0 with PR #2829 undone works:\n```\n# perform\
+    \ the undo in core.py (see below)\n$ python -c \"import main,sys; sys.argv=['cli', '--transpose'];\
+    \ main.cli()\"\nDebug: transpose=True\n```\n\n4. Verify that click 8.1.8 works:\n```\n$ pip install\
+    \ click==8.1.8\n$ python -c \"import main,sys; sys.argv=['cli', '--transpose']; main.cli()\"\nDebug:\
+    \ transpose=True\n```\n\nThe \"undo\" of PR #2829 has the following changes in `core.py`, starting\
+    \ at line 2613:\n```\n        # Undo PR 2829: Added the following two"
+  query_source: issue_closes
+  relevant_files:
+  - src/click/core.py
+  relevant_symbols:
+  - src/click/core.py::Option.__init__
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/2894
+  status: candidate
+  split: heldout
+  notes: 'fix commit 4fd2fea0db423d242aedcae0a5f664efe0a93484: Fix condition for setting flag value when
+    type is provided. query from issue (closes); fix PR https://github.com/pallets/click/pull/2930'
+- id: click-ffd43e9
+  query: "Missing reset on should_strip_ansi causing cascading issues during other tests\n\nPR #2729 was\
+    \ not resetting `_compat.should_strip_ansi` after replacing it with the mocked version. So the full\
+    \ pytest causes `test_echo_color_flag` to fail for windows machines.\r\n\r\nRun pytest on `test_utils.py`\
+    \ with a Windows machine and observe the test that fails when it shouldn't be.\r\n\r\nThe test should\
+    \ not fail.\r\n\r\nEnvironment:\r\n\r\n- Python version: 3.12.3\r\n- Click version: 8.1.x source code\r\
+    \n- OS: Windows"
+  query_source: issue_closes
+  relevant_files:
+  - src/click/testing.py
+  relevant_symbols:
+  - src/click/testing.py::CliRunner.isolation
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/2732
+  status: candidate
+  split: dev
+  notes: 'fix commit ffd43e9dc3b90bd698088fc7ebac9dbc6a4444b2: Fixed missing reset on _compat.should_strip_ansi..
+    query from issue (closes); fix PR https://github.com/pallets/click/pull/2733'
+- id: click-70c673d
+  query: "Fix eagerness of help option generated by `help_option_names`\n\nWhen a help option is generated\
+    \ by the use of `help_option_names` setting, it loose its eagerness. This issue has an effect on the\
+    \ order in which parameters (and their callbacks) are processed, and breaks the evaluation order described\
+    \ in the documentation: https://click.palletsprojects.com/en/stable/advanced/#callback-evaluation-order\r\
+    \n\r\nThat's because the utility method `iter_params_for_processing()` is comparing option objects,\
+    \ and the help option is generated on every  `get_help_option()` or `get_params(ctx)` call. This behavior\
+    \ is demonstrated by a unit-test in this PR.\r\n\r\nMy solution to fix this issue consist in caching\
+    \ locally the auto-generated help option. This solves the issue.\r\n\r\nI used this oportunity to\
+    \ clarify some documentation, and unit-test the main method responsible for the ordering of parameters.\r\
+    \n\r\nThis is more or less a follow up of #2563, which has been merged in the upcoming v8.1.8 release.\r\
+    \n\r\nChecklist:\r\n\r\n- [x] Add tests that demonstrate the correct behavior of the change. Tests\
+    \ should fail without the change.\r\n- [x] Add or update relevant docs, in the docs folder and in\
+    \ code.\r\n- [x] Add an entry in `CHANGES.rst` summarizing the change and linking to the issue.\r\n\
+    - [x] Add `.. versionchanged::` entries in any relevant code docs.\r\n- [x] Run pre-commit hooks and\
+    \ fix any issues.\r\n- [x] Run `pytest` and `tox`, no tests failed."
+  query_source: pr_text
+  relevant_files:
+  - src/click/core.py
+  relevant_symbols:
+  - src/click/core.py::<module>
+  - src/click/core.py::iter_params_for_processing
+  - src/click/core.py::Command.__init__
+  - src/click/core.py::Command.get_help_option
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/pull/2811
+  status: candidate
+  split: heldout
+  notes: 'fix commit 70c673d37eb91ba42a129be9037caf3ebed62f3e: Fix eagerness of help option generated
+    by `help_option_names` (#2811). LEAKAGE RISK: query from PR text, not an issue'
+- id: click-c326df9
+  query: "Fix closing of callbacks on CLI exit\n\nThis PR forces the context to close itself on CLI exits.\r\
+    \n\r\nThis makes sure all callbacks registered by invoked options are properly called whenever a `ctx.exit()`\
+    \ action is triggered. Which has the effect of preventing state leaks.\r\n\r\nThese leaks cannot be\
+    \ witness in standard CLI operations, because on `ctx.exit()` call, the OS process that is running\
+    \ the Python CLI will be destroyed.\r\n\r\nStill, in unittests, these state leaks will leads to flaky\
+    \ and non-deterministic tests, as the `pytest`, `tox` or any other test framework will keep using\
+    \ the same Python interpreter. To demonstrate this, I implemented a unit test using loggers as a fixture,\
+    \ in addition to a generic unit test.\r\n\r\nChecklist:\r\n\r\n- [x] Add tests that demonstrate the\
+    \ correct behavior of the change. Tests should fail without the change.\r\n- [x] Add or update relevant\
+    \ docs, in the docs folder and in code.\r\n- [x] Add an entry in `CHANGES.rst` summarizing the change\
+    \ and linking to the issue.\r\n- [x] Add `.. versionchanged::` entries in any relevant code docs.\r\
+    \n- [x] Run `pre-commit` hooks and fix any issues.\r\n- [x] Run `pytest` and `tox`, no tests failed."
+  query_source: pr_text
+  relevant_files:
+  - src/click/core.py
+  relevant_symbols:
+  - src/click/core.py::Context.exit
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/pull/2680
+  status: candidate
+  split: heldout
+  notes: 'fix commit c326df95e9e3da0425360e030413f6a3ee25fdee: Fix closing of callbacks on CLI exit (#2680).
+    LEAKAGE RISK: query from PR text, not an issue'
+- id: click-1a4d8c1
+  query: "`show_choices=False` seems to have no effect\n\nI noticed when using Typer that even if you\
+    \ pass `show_choices=False`, the choices still get shown in the help. It seems that this is related\
+    \ to Click.\r\n\r\nExample:\r\n```python\r\nimport click\r\n\r\n@click.command()\r\n@click.option('-s',\
+    \ '--string-to-echo', type=click.Choice(['hello', 'world']), show_choices=False)\r\ndef echo(string):\r\
+    \n    click.echo(string)\r\n\r\nif __name__ == \"__main__\":\r\n    echo()\r\n```\r\n```\r\nUsage:\
+    \ ... [OPTIONS]\r\n\r\nOptions:\r\n  -s, --string-to-echo [hello|world]\r\n  --help              \
+    \            Show this message and exit.\r\n```\r\n\r\nI guess it isn't documented what `show_choices`\
+    \ does for `Option` (if anything) in the non-prompt case, but I expected `show_choices=False` to disable\
+    \ showing the choices in the help.\r\n\r\nEnvironment:\r\n\r\n- Python version: 3.9.13\r\n- Click\
+    \ version: 8.1.3"
+  query_source: issue_closes
+  relevant_files:
+  - src/click/types.py
+  relevant_symbols:
+  - src/click/types.py::Choice.get_metavar
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/2356
+  status: candidate
+  split: heldout
+  notes: 'fix commit 1a4d8c1bb1e8f8e214ede7223bd2c05dc2ce006a: Fix metavar for Choice options when show_choices=False
+    (#2365). query from issue (closes); fix PR https://github.com/pallets/click/pull/2365'
+- id: click-afc86c7
+  query: "click.echo does not force colors on Windows with color=True\n\nUsing `click.echo(click.style(\"\
+    Foo\", fg=\"red\"), color=True)` on Windows will not print \"Foo\" in red if the output is not a terminal\
+    \ that supports colors, so it seems that `color=True` is ignored on Windows.\r\n\r\nHere is an example\
+    \ code to reproduce the bug:\r\n```\r\nimport click\r\n\r\n\r\ndef main():\r\n    test_txt = \"click_echo.txt\"\
+    \r\n    with open(test_txt, \"w\") as f:\r\n        click.secho(\"Without setting color\", file=f,\
+    \ fg=\"red\")\r\n        click.secho(\"With color=False\", file=f, fg=\"red\", color=False)\r\n  \
+    \      click.secho(\"With color=True\", file=f, fg=\"red\", color=True)\r\n\r\n    click.echo(f\"\
+    Check the contents of {test_txt}\")\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    main()\r\n```\r\
+    \nAfter running it on Linux the third line of `click_echo.txt` will contain the ANSI color codes but\
+    \ on Windows all three lines will be the same (the behavior is the same if `echo` prints on the console\
+    \ and the script output is redirected to a file)\r\n\r\nEnvironment:\r\n\r\n- Python version: 3.9\r\
+    \n- Click version: 8.1.7"
+  query_source: issue_closes
+  relevant_files:
+  - src/click/utils.py
+  relevant_symbols:
+  - src/click/utils.py::echo
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/2606
+  status: candidate
+  split: dev
+  notes: 'fix commit afc86c748c214939e2293ec00879d85293bcd9fa: Fix colored output on Windows (#2607).
+    query from issue (closes); fix PR https://github.com/pallets/click/pull/2607'
+- id: click-61f8101
+  query: "Empty string default values are not displayed\n\nIf an option has a default value of `\"\"`,\
+    \ the `show_default` option does not display anything. \r\n\r\nReproducible example:\r\n```\r\nimport\
+    \ click\r\n\r\n@click.group()\r\ndef test_cli() -> None:\r\n    pass \r\n\r\n\r\n@test_cli.command(help=\"\
+    Test CLI\")\r\n@click.option(\"--test_value\", type=str, default=\"\", show_default=True)\r\ndef test_function(\r\
+    \n    test_value: str\r\n) -> None:\r\n    print(test_value)\r\n\r\n\r\n@click.group()\r\ndef cli()\
+    \ -> None:\r\n    pass\r\n\r\n\r\ncli.add_command(test_cli)\r\ncli()\r\n```\r\n\r\nExpected to see\
+    \ a default displayed. Actual behavior:\r\n<img width=\"653\" alt=\"image\" src=\"https://user-images.githubusercontent.com/53453358/235223998-5e387b8b-45ac-41bd-af56-59ac177991fc.png\"\
+    >\r\n\r\nEnvironment:\r\n\r\n- Python version: 3.11.3\r\n- Click version: 8.0.3"
+  query_source: issue_closes
+  relevant_files:
+  - src/click/core.py
+  relevant_symbols:
+  - src/click/core.py::Option.get_help_record
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/2500
+  status: candidate
+  split: dev
+  notes: 'fix commit 61f8101f4e0d02cb902ef17853fa35ad88185265: Fix printing of default option value to
+    handle empty strings. query from issue (closes); fix PR https://github.com/pallets/click/pull/2724'

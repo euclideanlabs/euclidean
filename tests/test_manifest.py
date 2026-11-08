@@ -18,6 +18,7 @@ def make_case(case_id, status="reviewed", **over):
     case = {
         "id": case_id,
         "query": "Help text is wrapped at the wrong width",
+        "query_source": "issue_closes",
         "relevant_files": ["src/click/formatting.py"],
         "relevant_symbols": ["src/click/formatting.py::HelpFormatter.write_usage"],
         "label_source": "fix_commit",
@@ -68,6 +69,8 @@ def test_only_reviewed_cases_are_scored(tmp_path):
         (lambda d: d["cases"][0].update(relevant_symbols=["src/click/core.py::Option"]), "not in relevant_files"),
         (lambda d: d["cases"][0].update(status="approved"), "status"),
         (lambda d: d["cases"][0].update(extra_field=1), "extra"),
+        (lambda d: d["cases"][0].update(query_source="pr_text"), "pr_text query"),
+        (lambda d: d["cases"][0].pop("query_source"), "query_source"),
         (lambda d: d["cases"][0].update(split="heldout" if d["cases"][0]["split"] == "dev" else "dev"), "hash split"),
     ],
 )
