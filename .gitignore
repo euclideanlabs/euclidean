@@ -37,3 +37,7 @@ wheels/
 .coverage.*
 htmlcov/
 .ipynb_checkpoints/
+
+# Private agent notes (local only)
+.agent/
+CLAUDE.local.md
