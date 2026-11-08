@@ -1,0 +1,330 @@
+schema_version: 1
+dataset:
+  name: click
+  repo_url: https://github.com/pallets/click.git
+  commit_sha: 2247b35ea1c47c727d7a06e51fa280e12a863ff6
+  corpus_globs:
+  - src/click/**/*.py
+  heldout_fraction: 0.3
+cases:
+- id: click-f67c2bb
+  query: "Fix short help abbreviation\n\nJust a small bug I encountered in my CLIs, where as `vs.` or\
+    \ `e.g.` was prematurely ending the shorten version of a help message produced by `_make_default_short_help`.\r\
+    \n\r\nAlso use the opportunity to simplify the calculations and depends on Python's `textwrap.shorten`."
+  relevant_files:
+  - src/click/utils.py
+  relevant_symbols:
+  - src/click/utils.py::_make_default_short_help
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/pull/3865
+  status: candidate
+  split: dev
+  notes: 'fix commit f67c2bb6c2f055c1c7a57cd46c3697fc26a7742e: Fix short help abbreviation. LEAKAGE RISK:
+    query from PR text, not an issue'
+- id: click-fc518e4
+  query: "Fix race condition on `KeyboardInterrupt` in `Command.main()`\n\nThis PR address https://github.com/pallets/click/issues/3802\
+    \ by unifying the policy that was already implemented elsewhere in the code.\r\n\r\nThis applies the\
+    \ policy the pager has had since #351, where a late interrupt must not replace the intended outcome:\r\
+    \nhttps://github.com/pallets/click/blob/8b19813f2bfca99f1018a587a8cf54fc959f2e5d/src/click/_termui_impl.py#L618-L632\r\
+    \n\r\nSo now in `main()`, every handler takes the same two steps:\r\n- propagate when standalone mode\
+    \ is off, or\r\n- collect the message and the exit code.\r\n\r\nA final step then prints the message\
+    \ and exits, so a late interrupt can only lose the message, not the code.\r\n\r\nThis save one nesting\
+    \ level in the `try...except` cascade of `main()`.\r\n\r\nThis is in accordance with older policy\
+    \ choices from:\r\n- #2380: where we decided that the first interrupt still reaches non-standalone\
+    \ callers as `Abort`, and keeps the interrupt as its `__cause__`\r\n- #2584: where we decided not\
+    \ to change the `Aborted!` message\r\n\r\nWith these changes, we do not crash anymore, and a late\
+    \ interrupt after a successful run now exits 0, instead of printing a traceback.\r\n\r\nThis PR also\
+    \ adds stress tests that introduce random delays in the execution so we can catch regression at different\
+    \ points in time with real SIGINTs.\r\n\r\nOff course we can discuss the policy we rely on and I'm\
+    \ ready to change the code accordingly."
+  relevant_files:
+  - src/click/core.py
+  relevant_symbols:
+  - src/click/core.py::_echo_aborted
+  - src/click/core.py::<module>
+  - src/click/core.py::Command.main
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/pull/3818
+  status: candidate
+  split: dev
+  notes: 'fix commit fc518e41218b447e875fe27244ae692c269bcb77: Fix race condition on `KeyboardInterrupt`
+    arriving in `Command.main()`. LEAKAGE RISK: query from PR text, not an issue'
+- id: click-f58ca3e
+  query: 'Fix `copy`, `deepcopy` and `pickle` of `Sentinel` members
+
+
+    Just a small issue I encountered on Python 3.10, where `Enum` has no `__deepcopy__`. Now that every
+    parameter have a sentinel, `copy.deepcopy()` of any `Option`, `Argument` or `Command` fails on Python
+    3.10. And `pickle` fails on every Python version. This PR fix this issue.'
+  relevant_files:
+  - src/click/_utils.py
+  relevant_symbols:
+  - src/click/_utils.py::Sentinel.__copy__
+  - src/click/_utils.py::Sentinel
+  - src/click/_utils.py::Sentinel.__deepcopy__
+  - src/click/_utils.py::Sentinel.__reduce_ex__
+  - src/click/_utils.py::<module>
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/pull/3805
+  status: candidate
+  split: dev
+  notes: 'fix commit f58ca3e81424a35626c8a475eb59ab95589008ce: Fix `copy`, `deepcopy` and `pickle` of
+    `Sentinel` members. LEAKAGE RISK: query from PR text, not an issue'
+- id: click-a6256bf
+  query: "Forward all user's parameters set in `PAGER` and improve flag detection\n\nAnother PR following\
+    \ up on pager refactors that:\r\n- Forwards all user's parameters set in `PAGER`\r\n- Improve detection\
+    \ of raw mode by extending flag and option parsing\r\n- Fix detection of `less.exe` on Windows (even\
+    \ if not currently exercised, this make the method future-proof)\r\n\r\nBut more importantly: adds\
+    \ dozen of testing with weird edge-cases around pager's internal methods.\r\n\r\nFollows up on:\r\n\
+    - https://github.com/pallets/click/pull/3767\r\n- https://github.com/pallets/click/pull/3776"
+  relevant_files:
+  - src/click/_termui_impl.py
+  relevant_symbols:
+  - src/click/_termui_impl.py::_pager_contextmanager
+  - src/click/_termui_impl.py::_less_uses_raw_mode
+  - src/click/_termui_impl.py::<module>
+  - src/click/_termui_impl.py::_pipepager
+  - src/click/_termui_impl.py::_tempfilepager
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/pull/3777
+  status: candidate
+  split: dev
+  notes: 'fix commit a6256bfb5971d5e58585fe7b6c656134e1ade5a4: Forwards all user''s parameters set in
+    `PAGER`. LEAKAGE RISK: query from PR text, not an issue'
+- id: click-3495fba
+  query: "help not resolving automatically\n\nFrom the docs: \r\n\r\nThe help parameter is implemented\
+    \ in Click in a very special manner. Unlike regular parameters it’s automatically added by Click for\
+    \ any command and it performs automatic conflict resolution. By default it’s called --help, but this\
+    \ can be changed. If a command itself implements a parameter with the same name, the default help\
+    \ parameter stops accepting it. There is a context setting that can be used to override the names\
+    \ of the help parameters called [help_option_names](https://click.palletsprojects.com/en/stable/api/#click.Context.help_option_names).\r\
+    \n\r\nWhat is wrong: \r\nHelp does not automatically resolve if there is an arg or kwarg called help.\
+    \ In the sample the file is called help.py\r\n\r\n``` \r\nimport click\r\n\r\n# This works \r\n@click.command()\r\
+    \n@click.argument('helps')\r\ndef this_works(helps):\r\n    print(helps)\r\n\r\n# > python -m help\
+    \ this\r\n# this\r\n\r\n# > python -m help --help\r\n# Usage: help.py [OPTIONS] HELPS\r\n\r\n# Options:\r\
+    \n#   --help  Show this message and exit.\r\n\r\n# This does not work\r\n@click.command()\r\n@click.argument('help')\r\
+    \ndef this_does_not_work(help):\r\n    print(help)\r\n\r\n# > python -m help this\r\n# Usage: help.py\
+    \ [OPTIONS] HELP\r\n# Try 'help.py --help' for help.\r\n\r\n# Error: Invalid value for '--help': 'this'\
+    \ is not a valid boolean.\r\n\r\n# > python -m help --help\r\n# Usage: help.py [OPTIONS] HELP\r\n\
+    # Try 'help.py --help' for help.\r\n\r\n# Error: Missing argument 'HELP'.\r\n\r\n# This does not work\r\
+    \n@click.command()\r\n@click.option('--h"
+  relevant_files:
+  - src/click/core.py
+  relevant_symbols:
+  - src/click/core.py::<module>
+  - src/click/core.py::Command.get_params
+  - src/click/core.py::Command.get_help_option
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/2819
+  status: candidate
+  split: dev
+  notes: 'fix commit 3495fba163dd61dea837cd557095df6c21515ac8: Warn when an argument name collide with
+    other parameters. query from issue; fix PR https://github.com/pallets/click/pull/3678'
+- id: click-07c909f
+  query: 'Validate `style()` color arguments
+
+
+    Also fix an explicit black color argument (`0`) being ignored.'
+  relevant_files:
+  - src/click/termui.py
+  relevant_symbols:
+  - src/click/termui.py::_interpret_color
+  - src/click/termui.py::style
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/pull/3677
+  status: candidate
+  split: dev
+  notes: 'fix commit 07c909f23f0f83b5ca137c167b9a134d66201f67: Validate style() color arguments, fix explicit
+    black color argument. LEAKAGE RISK: query from PR text, not an issue'
+- id: click-bec5928
+  query: "Fix `package_name` resolution when module differs from distribution name\n\nThere is an issue\
+    \ we glossed over when closing #2331: I analyzed the bug report as requiring a new slot/field to be\
+    \ added to the `@version_option` decorator. I promptly close the issue as we decided in https://github.com/pallets/click/discussions/3527\
+    \ to freeze `@version_option`.\r\n\r\nBut looking closely #2331 did not asked for a new `module_name`\
+    \ field. That was my suggestion on how to address the user request.\r\n\r\nSo reframing it, #2331\
+    \ is a report that `@version_option` is producing a `RuntimeError` for users in some legitimate situations.\
+    \ This breaks the out-of-the-box experience of `@version_option`.\r\n\r\nIn fact, the limitation has\
+    \ been pointed out by @davidism a couple of years ago at https://github.com/pallets/click/issues/1884#issuecomment-843693678:\r\
+    \n> If someone figures out a way to get the distribution version from the entry point name with `importlib.metadata`,\
+    \ I'd welcome a PR to improve our detection, but from my experiments with it I was not able to find\
+    \ how to do it. For now, I'll update the changelog.\r\n\r\nSo this is a PR to implement that fix.\r\
+    \n\r\nAddresses:\r\n- #1884\r\n- #2331\r\n- #3125"
+  relevant_files:
+  - src/click/decorators.py
+  relevant_symbols:
+  - src/click/decorators.py::version_option
+  - src/click/decorators.py::version_option.callback
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/pull/3582
+  status: candidate
+  split: dev
+  notes: 'fix commit bec59289d8cf9b9b4010642b2fee483e5f8eeefc: Fix `package_name` resolution when top-level
+    module differs from distribution name. LEAKAGE RISK: query from PR text, not an issue'
+- id: click-762c97e
+  query: "Fix double-bracketing of choices in synopsis\n\nA small rendering issue of choices being enclosed\
+    \ into double-brackets when argument is optional.\r\n\r\nIssue was likely unnoticed in the original\
+    \ https://github.com/pallets/click/issues/1272 / https://github.com/pallets/click/issues/1273 PR.\r\
+    \n\r\nThis mirrors the similar fix I implemented for commands in https://github.com/pallets/click/pull/3507"
+  relevant_files:
+  - src/click/core.py
+  relevant_symbols:
+  - src/click/core.py::Argument.make_metavar
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/pull/3578
+  status: candidate
+  split: heldout
+  notes: 'fix commit 762c97eef7c1b3779678992f26a553a2a8c80793: Fix double-bracketing of choices in synopsis.
+    LEAKAGE RISK: query from PR text, not an issue'
+- id: click-051bb0f
+  query: "Do not let the GC close a borrowed `stdout`\n\nComplete the partial fix proposed in https://github.com/pallets/click/pull/3482\
+    \ for https://github.com/pallets/click/issues/3449.\r\n\r\nThis PR reproduce the case highlighted\
+    \ in #3449 where a stream that is not managed by the pager machinery is closed by it unconditionally.\r\
+    \n\r\nAs  extra bonuses:\r\n- replace `_SkipClose` with `utils.KeepOpenFile`\r\n- document `KeepOpenFile`\r\
+    \n- eliminate a dead `elif isinstance(stream, t.BinaryIO)` branch as non-buffered text streams can\
+    \ be yielded as-is\r\n\r\nThis is a follow up of #3482 which is a follow up of #3405 which is a follow\
+    \ up of #1572.\r\n\r\nCC @ChrisPappalardo @AndreasBackx @craigds"
+  relevant_files:
+  - src/click/_termui_impl.py
+  - src/click/utils.py
+  relevant_symbols:
+  - src/click/_termui_impl.py::<module>
+  - src/click/_termui_impl.py::get_pager_file
+  - src/click/_termui_impl.py::_pipepager
+  - src/click/_termui_impl.py::_tempfilepager
+  - src/click/_termui_impl.py::_nullpager
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/pull/3533
+  status: candidate
+  split: heldout
+  notes: 'fix commit 051bb0f30b545cf7426deef819811815297c2798: Do not let the GC close a borrowed `stdout`.
+    LEAKAGE RISK: query from PR text, not an issue'
+- id: click-bff780f
+  query: "Pre-8.4.2 release changelog and doc fixes\n\nInconsistencies I spotted after 8.4.1 release:\r\
+    \n\r\n- Missing PR references in changelog entries:\r\n  - #3493\r\n  - #3482\r\n  - #3484\r\n  -\
+    \ #3471\r\n  - #3478\r\n- Changelog style and formatting\r\n- `.. versionadded::` admonition styling\r\
+    \n- rST to Markdown rewrite format\r\n\r\nThis is a WIP PR that I will use along the `stable` branch\
+    \ development cycle and is to be merged before its release.\r\n\r\nBefore removing the `draft` status,\
+    \ review all changes in the pending release diff: https://github.com/pallets/click/compare/8.4.1...stable\r\
+    \n\r\nFollow up on https://github.com/pallets/click/pull/3495."
+  relevant_files:
+  - src/click/_termui_impl.py
+  relevant_symbols:
+  - src/click/_termui_impl.py::get_pager_file
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/pull/3498
+  status: candidate
+  split: heldout
+  notes: 'fix commit bff780ff9df7a8d0a271db2f80c17c7be32dc2a1: Fix layout, align full version. LEAKAGE
+    RISK: query from PR text, not an issue'
+- id: click-9a2d169
+  query: "`types`: fix variance issues and improve type coverage\n\nThe generic types in `click.types`\
+    \ were all parametrized using an invariant type parameter. This can easily lead to unexpected type\
+    \ errors for downstream users. For example, type-checkers would not allow you to assign `ParamType[bool]`\
+    \ to an `ParamType[int]`, even though `bool` is a subclass of `int`. This addresses these issues by\
+    \ using appropriate variance for these generic type parameters.\n\nThis also fixes several other typing\
+    \ issues, removing several `# type: ignore`s and `t,cast`s. \n\nI also took the parametrize some of\
+    \ the typed dicts, avoid several (intrinsically type-unsafe) `Any` annotations.\n\nAnd just like https://github.com/pallets/click/pull/3422,\
+    \ this also fills in the missing annotations of attributes and constants. This consequently increases\
+    \ the type coverage by 2.18% (91.5% -> 93.68%).\n\nI realize there are quite a lot of changes here.\
+    \ But I was afraid that spreading these out over multiple PRs would result in a merge conflict mess.\
+    \ But if you want me to split this up anyway, then that's also fine as far as I'm concerned."
+  relevant_files:
+  - src/click/types.py
+  relevant_symbols:
+  - src/click/types.py::<module>
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/pull/3450
+  status: candidate
+  split: dev
+  notes: 'fix commit 9a2d169fcf5c3cce7b0cd5971ca2786e1f72c210: fix generic typed dict `TypeError` on Python
+    3.10. LEAKAGE RISK: query from PR text, not an issue'
+- id: click-b7e5fd4
+  query: "Backport #3504 from `main` to `stable` branch\n\nMy intention was to merge https://github.com/pallets/click/pull/3504\
+    \ to `stable` to include it for the upcoming 8.4.2 release, but was distracted by the topic of the\
+    \ PR itself and forgot to retarget the base branch of the PR from `main` to `stable`. This is the\
+    \ well known issue discussed at https://github.com/pallets/click/discussions/3337.\r\n\r\nTo fix this,\
+    \ this PR just cherry-pick the c3535905 commit from `main` and target `stable` inclusion. The next\
+    \ sync of `stable` to `main` will be clean and be reconciled automaticcaly by a forward-merge.\r\n\
+    \r\nAs a bonus, I added the missing changelog entry for #3504, updated the admonition and added a\
+    \ regression test."
+  relevant_files:
+  - src/click/shell_completion.py
+  relevant_symbols:
+  - src/click/shell_completion.py::<module>
+  - src/click/shell_completion.py::FishComplete.format_completion
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/pull/3508
+  status: candidate
+  split: heldout
+  notes: 'fix commit b7e5fd4cc7de70280eccd39f2bb956df617e5519: Fix broken fish completion and multiline
+    help string. LEAKAGE RISK: query from PR text, not an issue'
+- id: click-7d05a59
+  query: "Fix `get_parameter_source()` during type conversion and eager callbacks\n\n### Summary \r\n\r\
+    \nClick 8.4.0 moved `set_parameter_source()` to after `process_value()` when fixing flag-group arbitration\
+    \ ([#3403](https://github.com/pallets/click/issues/3403), [#3404](https://github.com/pallets/click/pull/3404)).\
+    \ That broke a case wasn't meant to change: anything that calls `get_parameter_source()` during type\
+    \ conversion or in an eager callback saw `None`, even though `consume_value()` had already figured\
+    \ out where the value came from ([#3458](https://github.com/pallets/click/issues/3458)).\r\n\r\nThis\
+    \ is affecting Flask: with Click 8.4.0, `FLASK_DEBUG=1` in the environment was ignored because `_set_debug`\
+    \ runs as an eager callback and could no longer see that the `--debug` flag was only at its default\
+    \ ([pallets/flask#6025](https://github.com/pallets/flask/issues/6025)).\r\n\r\nThe fix is to record\
+    \ the source right after `consume_value()` and before `process_value()`, matching 8.3.3 timing for\
+    \ callbacks and custom types. Flag-group arbitration is the same as today. \r\n\r\nThere is a second,\
+    \ narrower issue on the same code path: recording the source early means a *losing* option in a feature-switch\
+    \ group briefly overwrites `_parameter_source` before arbitration runs.  I am solving it by restoring\
+    \ the previous source when an option loses the slot. That path is easy to miss in tests (shared `opts`\
+    \ may give the loser the same source as the winner), so there is a dedicated case in `test_bool_flag_group"
+  relevant_files:
+  - src/click/core.py
+  relevant_symbols:
+  - src/click/core.py::Parameter.handle_parse_result
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/pull/3484
+  status: candidate
+  split: dev
+  notes: 'fix commit 7d05a59b9d46a415d85937630d1d812cf477f60a: Fix get_parameter_source() during type
+    conversion and eager callbacks. LEAKAGE RISK: query from PR text, not an issue'
+- id: click-c6bf75f
+  query: "`launch()` cannot locate files with spaces in the name on Windows\n\n_Related to #2868 but with\
+    \ files and `locate=True`_\n\n## Problem\n\nWhen a Windows program uses `click.launch(some_path, locate=True)`\
+    \ and `some_path` contains spaces, then Windows Explorer opens showing the user's Documents folder\
+    \ and not the specified file.\n\nDispatching the call to `powershell` and not `cmd` seems to fix the\
+    \ problem.\n\n## Reproduction\n\n```pwsh\n# Prepare and enter the virtual environment\nmkdir click-demo\n\
+    cd click-demo\npython -m venv --upgrade-deps .venv\n.\\.venv\\Scripts\\activate.ps1\n\n# Check versions\n\
+    pip -V\n# pip 25.1.1 from X:\\scratch\\click-demo\\.venv\\Lib\\site-packages\\pip (python 3.11)\n\n\
+    # Install click\npip install click\n\n# Check environment\npip list\n# Package    Version\n# ----------\
+    \ -------\n# click      8.2.1\n# colorama   0.4.6\n# pip        25.1.1\n# setuptools 80.9.0\n```\n\
+    \n**`click-demo.py`**\n```python\nimport pathlib\nimport subprocess\n\nimport click\n\n# No spaces\
+    \ in this path\nroot_folder = pathlib.Path(\"C:\\\\Users\\\\Public\")\n\n# No spaces in this path\n\
+    succeeding_folder = root_folder / \"click-demo\"\nsucceeding_folder.mkdir(exist_ok=True)\nclick.launch(str(succeeding_folder),\
+    \ locate=True)\n\n# Path has spaces!\nfailing_folder = root_folder / \"click demo\"\nfailing_folder.mkdir(exist_ok=True)\n\
+    click.launch(str(failing_folder), locate=True)\n\n# Wrap with powershell\nsubprocess.run(\n    [\n\
+    \        \"powershell\",\n        \"-Command\",\n        f\"explorer /select,{failing_folder!s}\"\
+    ,\n    ],\n    check=True,\n)\n```\n\nEnvironme"
+  relevant_files:
+  - src/click/_termui_impl.py
+  relevant_symbols:
+  - src/click/_termui_impl.py::open_url
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/2994
+  status: candidate
+  split: dev
+  notes: 'fix commit c6bf75fa74bff6523375cf91f97af0a7aae85fce: Fixes windows specific error regarding
+    spaces in filepaths for open_url.. query from issue; fix PR https://github.com/pallets/click/pull/3478'
+- id: click-32ae2ac
+  query: "Choice autocomplete incorrect for enums\n\nWhen using enums, the autocomplete doesn't give a\
+    \ value that works, as it doesn't use the same code to normalize. \n\nUse an enum like\n```\nimport\
+    \ enum\n\nclass MyEnum(enum.Enum):\n    foo = \"bar\"\n```\n\nwith\n\n```\n@click.choice(MyEnum)\n\
+    ```\n\nThe accepted value for the argument will be \"foo\", but the autocompleted value is \"MyEnum.foo\"\
+    \n\nEnvironment:\n\n- Python version: 3.13.4\n- Click version: 8.2.1\n\nI think I know how to fix\
+    \ it roughly, so I can open a PR."
+  relevant_files:
+  - src/click/types.py
+  relevant_symbols:
+  - src/click/types.py::Choice.shell_complete
+  label_source: fix_commit
+  source_ref: https://github.com/pallets/click/issues/3015
+  status: candidate
+  split: dev
+  notes: 'fix commit 32ae2acd3474a57d2450ea849545b2e1258bf76a: choice shell autocompletion to use normalize_choice().
+    query from issue; fix PR https://github.com/pallets/click/pull/3471'
