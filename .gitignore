@@ -1,6 +1,39 @@
-.venv/
-.cache/
+# Environment / secrets
 .env
+.env.*
+!.env.example
+*.env
+.envrc
+.venv/
+venv/
+env/
+ENV/
+
+# Python bytecode / compiled
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+*.dll
+*.dylib
+*.o
+*.obj
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+wheels/
+
+# Tool caches
+.cache/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.ipynb_checkpoints/
